@@ -1,9 +1,10 @@
 package client
 
 import (
-	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
+	
+	"golang.org/x/crypto/ssh"
 )
 
 type PtyInfo struct {
