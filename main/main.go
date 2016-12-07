@@ -29,6 +29,8 @@ var (
 	dbpass	 string
 	dbquery  string
 	fileLocation string
+	bindaddr string
+	remoteaddr string
 	port int
 )
 
@@ -53,17 +55,20 @@ func main() {
 	fmt.Printf("\npuebe [-sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]")
 	fmt.Printf("\npuebe --help [To view options] ")
 	fmt.Printf("\nEnter option: ")
-	 _, err := fmt.Scanf("%s", &option)
-	 
+	 _, er := fmt.Scanf("%s", &option)
+	if er != nil {
+		fmt.Println(er)
+	}
+			
 	switch(option) {
 		case "-sh"://ssh login
 			fmt.Printf("\nEnter Host name, User name and Password: ")
-			_, err = fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
-			if err != nil {
-				fmt.Println(err)
+			_, er = fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
+			if er != nil {
+				fmt.Println(er)
 			}
 			
-			server := &server {
+			server := &hostServer {
 				Host: hostName,
 			}
 	
@@ -78,12 +83,12 @@ func main() {
 			fmt.Println("Connected to ssh server!")
 			go onMessageReceived(conn)
 			for {
-				if quit {
+				if exitCode {
 					break
 				}
 				inputReader := bufio.NewReader(os.Stdin)
-				input, err := inputReader.ReadString('\n')
-				if err != nil {
+				input, erro = inputReader.ReadString('\n')
+				if erro != nil {
 					fmt.Println("Errors reading connection.")
 					return
 				}
@@ -111,7 +116,7 @@ func main() {
 			}
 			sshclient := server.NewSSHClient(config)
 			sshclient.MaxDataThroughput = MAXTHROUGHPUT
-			stdout, stderr, err := server.UploadFile(hostName, fileLocation, fileName)
+			stdout, stderr, err = server.UploadFile(hostName, fileLocation, fileName)
 			if err != nil {
 				log.Panicln(err)
 			}
@@ -126,18 +131,18 @@ func main() {
 		case "-pf": //ssh server forwarding
 			fmt.Printf("\nEnter Local BindAddress, Remote addr, ssh server addr, username, password")
 			_, err = fmt.Scanf("%s, %s, %s, %s, %s", &bindaddr, &remoteaddr,&hostName, &userName, &passWord)
-			server := new(server.LocalForwardServer)
+			server = new(server.LocalForwardServer)
 			server.LocalBindAddress = bindaddr
 			server.RemoteAddress = remoteaddr
 			server.SshServerAddress = hostName
 			server.SshUserPassword = userName
 			server.SshUserName = passWord
-			server.Start()
+			server.Start(dbop)
 			defer server.Stop()
 		
 		case "-lf"://ssh local port forwarding
 			fmt.Printf("\nEnter Host Name, DB name, DB password and Port")
-			_, err := fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
+			_, err = fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
 			ds := new(dbmagic.DataSource)
 			ds.Charset = "utf8"
 			ds.Host = hostName
@@ -145,14 +150,14 @@ func main() {
 			ds.DatabaseName = dbname
 			ds.User = dbuser
 			ds.Password = dbpass
-			dbm, err := dbmagic.Open("mysql", ds)
+			dbm, err = dbmagic.Open("mysql", ds)
 			if err != nil {
 				log.Fatal(err)
 			}
 		
 			fmt.Printf("\nEnter Database query: ")
 			fmt.Scanf("%s", &dbquery)
-			results, err := dbm.Db.Query(dbquery)
+			results, err = dbm.Db.Query(dbquery)
 			defer dbmagic.Close()
 			if err != nil {
 				log.Fatal(err)
@@ -171,7 +176,7 @@ func main() {
 }
 
 func onMessageReceived(conn net.Conn) {
-	buffer = make([]byte, BUFFER_SIZE)
+	buffer := make([]byte, BUFFER_SIZE)
 	for {
 		n, err := conn.Read(buffer)
 		if err == io.EOF {
