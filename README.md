@@ -31,9 +31,7 @@ $ go get github.com/scottkiss/gomagic/dbmagic
 $ make
 ```
 
-
 ### Run
-
 ```
 $ make run
 ```

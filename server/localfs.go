@@ -8,8 +8,9 @@ import (
 )
 
 type LocalForwardServer struct {
-	forwardconfig *ForwardConfig
+	ForwardConfig
 	tunnel *Tunnel
+	
 }
 
 //create tunnel for server forwarding
@@ -46,7 +47,7 @@ func localReaderToRemoteWriter(localConn net.Conn, sshConn net.Conn) {
 	}
 }
 
-func remoteReaderToLoacalWriter(sshConn net.Conn, localConn net.Conn) {
+func remoteReaderToLocalWriter(sshConn net.Conn, localConn net.Conn) {
 	_, err := io.Copy(localConn, sshConn)
 	if err != nil {
 		log.Fatalf("IO Copy Error:%v", err)
