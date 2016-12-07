@@ -15,21 +15,24 @@ Install the following packages:
 
 * [Go version 1.7](https://github.com/golang/go/releases/tag/go1.7.3)
 
-## Running Application
+## Installation
 
 Clone Git repo:
+
 ```
 $ git clone git@github.com:Linoxide/puebe.git
 $ cd puebe
+$ go get github.com/go-sql-driver/mysql
+$ go get github.com/scottkiss/gomagic/dbmagic
 ```
 
-Build and run application
+### Build && Run application
 ```
 $ make
 ```
 
 
-## Run
+### Run
 
 ```
 $ make run

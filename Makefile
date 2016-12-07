@@ -9,26 +9,44 @@ BUILDTAGS=
 all: build fmt lint vet test run
 
 
-
 build:
-	./build.sh
+	@echo "+ $@"
+	@go build -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v main)
+	@go build -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v client)
+	@go build -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v server)
 
 static:
 	@echo "+ $@"
-	CGO_ENABLED=1 go build -tags "$(BUILDTAGS) cgo static_build" -ldflags "-w -extldflags -static" -o puebe .
+	CGO_ENABLED=1 go build -tags "$(BUILDTAGS) cgo static_build" -ldflags "-w -extldflags -static" -o main .
 
 fmt:
 	@echo "+ $@"
-	@gofmt -s -l . | grep -v cmd | tee /dev/stderr
+	@gofmt -s -l . | grep -v server
+	@gofmt -s -l . | grep -v client
 
 lint:
 	@echo "+ $@"
-	@golint ./... | grep -v vendor | tee /dev/stderr
+	@golint ./... | grep -v server | tee /dev/stderr
+	@golint ./... | grep -v client | tee /dev/stderr
 
+test:
+	@echo "+ $@"
+	@go test -v -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v server)
+	@go test -v -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v client)
+	
 vet:
 	@echo "+ $@"
-	@go vet $(shell go list ./... | grep -v cmd)
+	@go vet $(shell go list ./... | grep -v server)
+	@go vet $(shell go list ./... | grep -v client)
 
-test: fmt vet
+clean:
 	@echo "+ $@"
-	@go test -v -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v cmd)
+	@rm -rf puebe
+
+install:
+	@echo "+ $@"
+	@go install ./main
+	
+run: 
+	@echo "+ $@"
+	go run ./main
