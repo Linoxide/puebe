@@ -46,14 +46,86 @@ type hostServer struct {
 	Host string
 }
 
+
+
+func (s *hostServer) Start() {
+	ln, err := net.Listen("tcp", s.Host)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer ln.Close()
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println(err)
+		}
+		go handleConn(conn)
+	}
+}
+
+func onMessageReceived(conn net.Conn) {
+	buffer := make([]byte, BUFFER_SIZE)
+	for {
+		n, err := conn.Read(buffer)
+		if err == io.EOF {
+			fmt.Printf("The RemoteAddr: %s is closed!\n", conn.RemoteAddr().String())
+			return
+		}
+		if err != nil {
+			break
+		}
+		if n > 0 {
+			str := string(buffer[:n])
+			fmt.Printf("%s", str)
+			if strings.Contains(str, "logout") {
+				exitCode = true
+			}
+		} else {
+			break
+		}
+	}
+}
+
+func handleConn(conn net.Conn) {
+	config := &server.SSHClientConfig{
+		User:     userName,
+		Password: passWord,
+		Host:     hostName,
+	}
+	sshclient := server.NewSSHClient(config)
+	_, err := sshclient.Connect()
+	if err == nil {
+		fmt.Println("SSH Connection success")
+	} else {
+		fmt.Println("SSH Connection failure")
+	}
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
+	}
+	pty := &server.PtyInfo{
+		Term:  "xterm-256color",
+		H:     80,
+		W:     40,
+		Modes: modes,
+	}
+	session, err := sshclient.Pipe(conn, pty, nil, 30)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer session.Close()
+}
+
+
 func main() {
 
 	var option string
 
 	fmt.Printf("\nPUEBE SSH TOOL")
 	fmt.Printf("\nUsage: puebe [OPTION].")
-	fmt.Printf("\npuebe [-sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]")
-	fmt.Printf("\npuebe --help [To view options] ")
+	fmt.Printf("\nOPTIONS [-sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]")
+	fmt.Printf("\n --help [To view options] \n\n")
 	fmt.Printf("\nEnter option: ")
 	_, er := fmt.Scanf("%s", &option)
 	if er != nil {
@@ -67,7 +139,7 @@ func main() {
 		if er != nil {
 			fmt.Println(er)
 		}
-
+		
 		server := &hostServer{
 			Host: hostName,
 		}
@@ -131,39 +203,25 @@ func main() {
 	case "-pf": //ssh server forwarding
 		fmt.Printf("\nEnter Local BindAddress, Remote addr, ssh server addr, username, password")
 		_, err := fmt.Scanf("%s, %s, %s, %s, %s", &bindaddr, &remoteaddr, &hostName, &userName, &passWord)
+		if err != nil {
+			fmt.Println(err)
+		}
 		srv := new(server.LocalForwardServer)
 		srv.LocalBindAddress = bindaddr
 		srv.RemoteAddress = remoteaddr
 		srv.SshServerAddress = hostName
 		srv.SshUserPassword = userName
 		srv.SshUserName = passWord
-		srv.Start(dbop)
+		go srv.Start(dbWorker)
 		defer srv.Stop()
 
 	case "-lf": //ssh local port forwarding
 		fmt.Printf("\nEnter Host Name, DB name, DB password and Port")
 		_, err := fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
-		ds := new(dbmagic.DataSource)
-		ds.Charset = "utf8"
-		ds.Host = hostName
-		ds.Port = port
-		ds.DatabaseName = dbname
-		ds.User = dbuser
-		ds.Password = dbpass
-		dbm, erm := dbmagic.Open("mysql", ds)
-		if erm != nil {
-			log.Fatal(erm)
-		}
-
-		fmt.Printf("\nEnter Database query: ")
-		fmt.Scanf("%s", &dbquery)
-		results, errm := dbm.Db.Query(dbquery)
-		defer dbmagic.Close()
 		if err != nil {
-			log.Fatal(errm)
+			fmt.Println(err)
 		}
-
-		log.Println(results)
+		dbWorker();
 		break
 
 	case "--help":
@@ -175,71 +233,27 @@ func main() {
 	}
 }
 
-func onMessageReceived(conn net.Conn) {
-	buffer := make([]byte, BUFFER_SIZE)
-	for {
-		n, err := conn.Read(buffer)
-		if err == io.EOF {
-			fmt.Printf("The RemoteAddr: %s is closed!\n", conn.RemoteAddr().String())
-			return
-		}
-		if err != nil {
-			break
-		}
-		if n > 0 {
-			str := string(buffer[:n])
-			fmt.Printf("%s", str)
-			if strings.Contains(str, "logout") {
-				exitCode = true
-			}
-		} else {
-			break
-		}
-	}
-}
+func dbWorker() {
 
-func handleConn(conn net.Conn) {
-	config := &server.SSHClientConfig{
-		User:     userName,
-		Password: passWord,
-		Host:     hostName,
+	ds := new(dbmagic.DataSource)
+	ds.Charset = "utf8"
+	ds.Host = hostName
+	ds.Port = port
+	ds.DatabaseName = dbname
+	ds.User = dbuser
+	ds.Password = dbpass
+	dbm, erm := dbmagic.Open("mysql", ds)
+	if erm != nil {
+		log.Fatal(erm)
 	}
-	sshclient := server.NewSSHClient(config)
-	_, err := sshclient.Connect()
-	if err == nil {
-		fmt.Println("SSH Connection success")
-	} else {
-		fmt.Println("SSH Connection failure")
-	}
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}
-	pty := &server.PtyInfo{
-		Term:  "xterm-256color",
-		H:     80,
-		W:     40,
-		Modes: modes,
-	}
-	session, err := sshclient.Pipe(conn, pty, nil, 30)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer session.Close()
-}
 
-func (s *hostServer) Start() {
-	ln, err := net.Listen("tcp", s.Host)
-	if err != nil {
-		fmt.Println(err)
+	fmt.Printf("\nEnter Database query: ")
+	fmt.Scanf("%s", &dbquery)
+	results, errm := dbm.Db.Query(dbquery)
+	defer dbm.Db.Close()
+	if errm != nil {
+		log.Fatal(errm)
 	}
-	defer ln.Close()
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Println(err)
-		}
-		go handleConn(conn)
-	}
+
+	log.Println(results)
 }
