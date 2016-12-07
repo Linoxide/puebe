@@ -4,13 +4,11 @@ import (
 	"io"
 	"log"
 	"net"
-
 )
 
 type LocalForwardServer struct {
 	ForwardConfig
 	tunnel *Tunnel
-	
 }
 
 //create tunnel for server forwarding
