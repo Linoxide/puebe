@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	
+
 	"golang.org/x/crypto/ssh"
 )
 
@@ -28,6 +28,15 @@ type SSHClient struct {
 	SSHClientConfig
 	remoteConn  *ssh.Client
 	isConnected bool
+}
+
+type SSHClientConfig struct {
+	Host              string
+	User              string
+	Password          string
+	Privatekey        string
+	DialTimeoutSecond int
+	MaxDataThroughput uint64
 }
 
 func (c *SSHClient) maxThroughputControl() {

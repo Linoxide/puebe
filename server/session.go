@@ -6,9 +6,7 @@ import (
 	"io"
 	"log"
 	"time"
-	
-	"github.com/Linoxide/puebe/server/client"
-	
+
 	"golang.org/x/crypto/ssh"
 )
 
