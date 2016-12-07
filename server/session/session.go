@@ -1,4 +1,4 @@
-package session
+package server
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"time"
+	
+	"github.com/Linoxide/puebe/server/client"
 	
 	"golang.org/x/crypto/ssh"
 )

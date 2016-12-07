@@ -1,4 +1,4 @@
-package tool
+package server
 
 import (
 	crand "crypto/rand"
@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	
+	"github.com/Linoxide/puebe/server/client"
 )
 
 var (

@@ -1,9 +1,11 @@
-package filesystem
+package server
 
 import (
 	"io"
 	"log"
 	"net"
+	
+	"github.com/Linoxide/puebe/server/client"
 )
 
 type LocalForwardServer struct {
