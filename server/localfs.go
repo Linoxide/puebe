@@ -33,7 +33,7 @@ func (this *LocalForwardServer) createTunnel() {
 func (this *LocalForwardServer) handleConnectionAndForward(conn *net.Conn) {
 	sshConn, err := this.tunnel.Client.Dial("tcp", this.RemoteAddress)
 	if err != nil {
-		log.Fatalf("SSH Client Dial error:%v", err)
+		log.Fatalf("SSH Client Dial error: %v", err)
 	}
 	log.Println("Successfully Created SSH connection")
 	go localReaderToRemoteWriter(*conn, sshConn)
@@ -58,7 +58,7 @@ func (this *LocalForwardServer) Start(call func()) {
 	this.createTunnel()
 	ln, err := net.Listen("tcp", this.LocalBindAddress)
 	if err != nil {
-		log.Fatalf("Net listening Error :%v", err)
+		log.Fatalf("Network listening Error :%v", err)
 	}
 	defer ln.Close()
 	var called bool
@@ -79,6 +79,6 @@ func (this *LocalForwardServer) Start(call func()) {
 func (this *LocalForwardServer) Stop() {
 	err := this.tunnel.Client.Close()
 	if err != nil {
-		log.Fatalf("ssh client stop error:%v", err)
+		log.Fatalf("SSH Client termination error: %v", err)
 	}
 }

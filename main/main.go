@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +12,7 @@ import (
 	
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/scottkiss/gomagic/dbmagic"
+	"github.com/Linoxide/puebe/server"
 	
 	"golang.org/x/crypto/ssh"
 )
@@ -23,66 +23,150 @@ var (
 	hostName string
 	userName string
 	passWord string
+	fileName string
+	dbname   string
+	dbuser	 string
+	dbpass	 string
+	dbquery  string
+	fileLocation string
+	port int
 )
 
+var help string = "puebe OPTION [sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]"
 const BUFFER_SIZE = 1024 * 4
+const MAXTHROUGHPUT = 6553600
 
 var buf = make([]byte, BUFFER_SIZE) //holds buffer variable
 
 //ssh server structure.
-type server struct {
+type hostServer struct {
 	Host string
 }
 
-/**
- * SSH Forward config.
- */
-type ForwardConfig struct {
-	LocalBindAddress string
-	RemoteAddress    string
-	SshServerAddress string
-	SshUserName      string
-	SshUserPassword  string
-	SshPrivateKey    string
-}
 
-func startServer() {
+func main() {
+
+	var option string
 	
-	//collects ssh arguments.
-	flag.Stringvar(&hostName, "h", "", "Host Name")
-	flag.StringVar(&userName, "u", "", "User Name")
-	flag.StringVar(&passWord, "p", "", "Password")
+	fmt.Printf("\nPUEBE SSH TOOL")
+	fmt.Printf("\nUsage: puebe [OPTION].")
+	fmt.Printf("\npuebe [-sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]")
+	fmt.Printf("\npuebe --help [To view options] ")
+	fmt.Printf("\nEnter option: ")
+	 _, err := fmt.Scanf("%s", &option)
+	 
+	switch(option) {
+		case "-sh"://ssh login
+			fmt.Printf("\nEnter Host name, User name and Password: ")
+			_, err = fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
+			if err != nil {
+				fmt.Println(err)
+			}
+			
+			server := &server {
+				Host: hostName,
+			}
 	
-	flag.Parse()
-	hostsp := strings.Split(hostName, "@")
-	userName = hostsp[0]
-	hostName = hostsp[1]
-	server := &server {
-		Host: "9000",
-	}
+			go server.Start()
+			time.Sleep(time.Second)
+			conn, err := net.Dial("tcp", ":8080")
+			if err != nil {
+				fmt.Println(err)
+			}
 	
-	go server.Start()
-	time.Sleep(time.Second)
-	conn, err := net.Dial("tcp", ":9000")
-	if err != nil {
-		fmt.Println(err)
-	}
-	
-	defer conn.Close()
-	fmt.Println("connected to ssh server!")
-	go onMessageReceived(conn)
-	for {
-		if quit {
+			defer conn.Close()
+			fmt.Println("Connected to ssh server!")
+			go onMessageReceived(conn)
+			for {
+				if quit {
+					break
+				}
+				inputReader := bufio.NewReader(os.Stdin)
+				input, err := inputReader.ReadString('\n')
+				if err != nil {
+					fmt.Println("Errors reading connection.")
+					return
+				}
+				b := []byte(input)
+				conn.Write(b)
+			}
 			break
-		}
-		inputReader := bufio.NewReader(os.Stdin)
-		input, err := inputReader.ReadString('\n')
-		if err != nil {
-			fmt.Println("There were errors reading.")
-			return
-		}
-		b := []byte(input)
-		conn.Write(b)
+		
+		case "-cp"://ssh copy
+			fmt.Printf("\nEnter Host name, User name and Password: ")
+			_, err = fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Printf("\nEnter File location, File name: ")
+			_, err = fmt.Scanf("%s, %s", &fileLocation, &fileName)
+			if err != nil {
+				fmt.Println(err)
+			}
+			
+			config := &server.SSHClientConfig{
+				User:     userName,
+				Password: passWord,
+				Host:	  hostName,
+			}
+			sshclient := server.NewSSHClient(config)
+			sshclient.MaxDataThroughput = MAXTHROUGHPUT
+			stdout, stderr, err := server.UploadFile(hostName, fileLocation, fileName)
+			if err != nil {
+				log.Panicln(err)
+			}
+	
+			if stderr != "" {
+				log.Panicln(stderr)
+			}
+			
+			log.Println("File sent" + stdout)
+			break
+		
+		case "-pf": //ssh server forwarding
+			fmt.Printf("\nEnter Local BindAddress, Remote addr, ssh server addr, username, password")
+			_, err = fmt.Scanf("%s, %s, %s, %s, %s", &bindaddr, &remoteaddr,&hostName, &userName, &passWord)
+			server := new(server.LocalForwardServer)
+			server.LocalBindAddress = bindaddr
+			server.RemoteAddress = remoteaddr
+			server.SshServerAddress = hostName
+			server.SshUserPassword = userName
+			server.SshUserName = passWord
+			server.Start()
+			defer server.Stop()
+		
+		case "-lf"://ssh local port forwarding
+			fmt.Printf("\nEnter Host Name, DB name, DB password and Port")
+			_, err := fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
+			ds := new(dbmagic.DataSource)
+			ds.Charset = "utf8"
+			ds.Host = hostName
+			ds.Port = port
+			ds.DatabaseName = dbname
+			ds.User = dbuser
+			ds.Password = dbpass
+			dbm, err := dbmagic.Open("mysql", ds)
+			if err != nil {
+				log.Fatal(err)
+			}
+		
+			fmt.Printf("\nEnter Database query: ")
+			fmt.Scanf("%s", &dbquery)
+			results, err := dbm.Db.Query(dbquery)
+			defer dbmagic.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		
+			log.Println(results)
+			break
+		
+		case "--help":
+			fmt.Println(help)
+			break
+		default: 
+			fmt.Printf("\nInvalid option.\n")
+			break
 	}
 }
 
@@ -110,26 +194,25 @@ func onMessageReceived(conn net.Conn) {
 }
 
 
-
 func handleConn(conn net.Conn) {
-	config := &gosshtool.SSHClientConfig{
+	config := &server.SSHClientConfig{
 		User:     userName,
 		Password: passWord,
 		Host:     hostName,
 	}
-	sshclient := gosshtool.NewSSHClient(config)
+	sshclient := server.NewSSHClient(config)
 	_, err := sshclient.Connect()
 	if err == nil {
-		fmt.Println("ssh connect success")
+		fmt.Println("SSH Connection success")
 	} else {
-		fmt.Println("ssh connect failure")
+		fmt.Println("SSH Connection failure")
 	}
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
 	}
-	pty := &gosshtool.PtyInfo{
+	pty := &server.PtyInfo{
 		Term:  "xterm-256color",
 		H:     80,
 		W:     40,
@@ -142,7 +225,7 @@ func handleConn(conn net.Conn) {
 	defer session.Close()
 }
 
-func (s *server) Start() {
+func (s *hostServer) Start() {
 	ln, err := net.Listen("tcp", s.Host)
 	if err != nil {
 		fmt.Println(err)
@@ -155,69 +238,4 @@ func (s *server) Start() {
 		}
 		go handleConn(conn)
 	}
-}
-
-/**
- * Local Port Forwarding.
- */
-func localPortForward() {
-	ds := new(dbmagic.DataSource)
-	ds.Charset = "utf8"
-	ds.Host = "127.0.0.1"
-	ds.Port = 9999
-	ds.DatabaseName = "test"
-	ds.User = "root"
-	ds.Password = "password"
-	dbm, err := dbmagic.Open("mysql", ds)
-	if err != nil {
-		log.Fatal(err)
-	}
-	row := dbm.Db.QueryRow("select name from provinces where id=?", 1)
-	var name string
-	err = row.Scan(&name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println(name)
-	dbm.Close()
-}
-
-
-
-
-
-func main() {
-	server := new(gosshtool.LocalForwardServer)
-	server.LocalBindAddress = ":9999"
-	server.RemoteAddress = "remote.com:3306"
-	server.SshServerAddress = "112.224.38.111"
-	server.SshUserPassword = "passwd"
-	server.SshUserName = "sirk"
-	server.Start(dbop)
-	defer server.Stop()
-}
-
-
-
-/***
- * SSH File transfer.
- */
-func main() {
-	config := &gosshtool.SSHClientConfig{
-	User:     USER,
-	Password: PASSWORD,
-		Host:     HOST,
-	}
-	sshclient := gosshtool.NewSSHClient(config)
-	sshclient.MaxDataThroughput = 6553600
-	stdout, stderr, err := gosshtool.UploadFile(HOST, "./test", "/root/test/test.txt")
-	if err != nil {
-		log.Panicln(err)
-	}
-	
-	if stderr != "" {
-		log.Panicln(stderr)
-	}
-	
-	log.Println("upload succeeded " + stdout)
 }
