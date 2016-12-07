@@ -37,4 +37,4 @@ $ make run
 
 ## Licence
 
-To the extent possible under the law, check out the [Linoxide](https://github.com/linoxide)licence for rights to this work.
+To the extent possible under the law, check out the [Linoxide](https://github.com/linoxide) licence for rights to this work.
