@@ -1,47 +1,43 @@
-# Builds and runs the micro services
+# Builds and runs the micro services go generate && go build
+#<mischief> bin/%: CGO_ENABLED=0 go build -ldflags '-s -w' -tags netgo -v -o $@ ./cmd/$*
 # Set an output prefix, which is the local directory if not specified
 PREFIX?=$(shell pwd)
 BUILDTAGS=
 
-.PHONY: all fmt vet lint build test static run
+.PHONY: all fmt vet lint build test install run
 .DEFAULT: default
 
-all: build fmt lint vet test run
+all: build fmt lint vet test install run
 
 
 build:
 	@echo "+ $@"
-	@go build -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v main)
-	@go build -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v server)
-
-static:
-	@echo "+ $@"
-	CGO_ENABLED=1 go build -tags "$(BUILDTAGS) cgo static_build" -ldflags "-w -extldflags -static" -o main .
+	@go build -tags "$(BUILDTAGS) cgo"  ./... 
 
 fmt:
 	@echo "+ $@"
-	@gofmt -s -l . | grep -v server
+	@go fmt  ./... 
 
 lint:
 	@echo "+ $@"
-	@golint ./... | grep -v server | tee /dev/stderr
+	@golint ./...
 
 test:
 	@echo "+ $@"
-	@go test -v -tags "$(BUILDTAGS) cgo" $(shell go list ./... | grep -v server)
+	@go test -v -tags "$(BUILDTAGS) cgo" ./... 
 	
 vet:
 	@echo "+ $@"
-	@go vet $(shell go list ./... | grep -v server)
+	@go vet ./... 
 
 clean:
 	@echo "+ $@"
-	@rm -rf puebe
+	@rm -rf ./cmd/main
 
 install:
 	@echo "+ $@"
-	@go install ./main
+	@go install ./... 
 	
 run: 
 	@echo "+ $@"
-	go run ./main
+	go run ./cmd/main.go

@@ -46,8 +46,6 @@ type hostServer struct {
 	Host string
 }
 
-
-
 func (s *hostServer) Start() {
 	ln, err := net.Listen("tcp", s.Host)
 	if err != nil {
@@ -117,7 +115,6 @@ func handleConn(conn net.Conn) {
 	defer session.Close()
 }
 
-
 func main() {
 
 	var option string
@@ -133,13 +130,13 @@ func main() {
 	}
 
 	switch option {
-	case "-sh": //ssh login
+	case  "sh": case"-sh": //ssh login
 		fmt.Printf("\nEnter Host name, User name and Password: ")
 		_, er = fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
 		if er != nil {
 			fmt.Println(er)
 		}
-		
+
 		server := &hostServer{
 			Host: hostName,
 		}
@@ -169,7 +166,7 @@ func main() {
 		}
 		break
 
-	case "-cp": //ssh copy
+	case "-cp": case "cp": //ssh copy
 		fmt.Printf("\nEnter Host name, User name and Password: ")
 		_, err := fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
 		if err != nil {
@@ -200,7 +197,7 @@ func main() {
 		log.Println("File sent" + stdout)
 		break
 
-	case "-pf": //ssh server forwarding
+	case "pf": case "-pf": //ssh server forwarding
 		fmt.Printf("\nEnter Local BindAddress, Remote addr, ssh server addr, username, password")
 		_, err := fmt.Scanf("%s, %s, %s, %s, %s", &bindaddr, &remoteaddr, &hostName, &userName, &passWord)
 		if err != nil {
@@ -215,13 +212,13 @@ func main() {
 		go srv.Start(dbWorker)
 		defer srv.Stop()
 
-	case "-lf": //ssh local port forwarding
+	case "lf": case "-lf": //ssh local port forwarding
 		fmt.Printf("\nEnter Host Name, DB name, DB password and Port")
 		_, err := fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
 		if err != nil {
 			fmt.Println(err)
 		}
-		dbWorker();
+		dbWorker()
 		break
 
 	case "--help":
