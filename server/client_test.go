@@ -21,5 +21,6 @@ func Test_Cmd(t *testing.T) {
 
 	t.Log(stdout)
 	t.Log(stderr)
+	t.Log(session)
 	t.Log("test")
 }

@@ -20,6 +20,7 @@ func Test_newSSHClient(t *testing.T) {
 	t.Log(stderr)
 	stdout, stderr, session, err = sshclient.Cmd("ls", nil, nil, 0)
 	t.Log(stdout)
+	t.Log(session)
 	t.Log("test")
 }
 
