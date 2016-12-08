@@ -225,11 +225,12 @@ func main() {
 		dbWorker()
 		break
 
-	case "--help":
+	case "--help": case "help":
 		fmt.Println(help)
 		break
 	default:
 		fmt.Printf("\nInvalid option.\n")
+		os.Exit(1)
 		break
 	}
 }
