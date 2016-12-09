@@ -119,120 +119,146 @@ func main() {
 
 	var option string
 
-	fmt.Printf("\nPUEBE SSH TOOL")
-	fmt.Printf("\nUsage: puebe [OPTION].")
-	fmt.Printf("\nOPTIONS [-sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]")
-	fmt.Printf("\n --help [To view options] \n\n")
-	fmt.Printf("\nEnter option: ")
-	_, er := fmt.Scanf("%s", &option)
-	if er != nil {
-		fmt.Println(er)
-	}
+	fmt.Printf("\nPUEBE SSH TOOL\n")
 
-	switch option {
-	case "sh":
-	case "-sh": //ssh login
-		fmt.Printf("\nEnter Host name, User name and Password: ")
-		_, er = fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
+	for true {
+
+		fmt.Printf("\nUsage: puebe [OPTION].")
+		fmt.Printf("\nOPTIONS [-sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]")
+		fmt.Printf("\n --help [To view options] [-q Exit] \n\n")
+		fmt.Printf("\nEnter option: ")
+		_, er := fmt.Scanf("%s", &option)
 		if er != nil {
 			fmt.Println(er)
 		}
 
-		server := &hostServer{
-			Host: hostName,
-		}
+		switch option {
+		case "sh":
+		case "-sh": //ssh login
+			sshLogin()
+			break
 
-		go server.Start()
-		time.Sleep(time.Second)
-		conn, err := net.Dial("tcp", ":8080")
-		if err != nil {
-			fmt.Println(err)
-		}
+		case "-cp":
+		case "cp": //ssh copy
+			sshCopy()
+			break
 
-		defer conn.Close()
-		fmt.Println("Connected to ssh server!")
-		go onMessageReceived(conn)
-		for {
-			if exitCode {
-				break
+		case "pf":
+		case "-pf": //ssh server forwarding
+			sshForward()
+			break
+
+		case "lf":
+		case "-lf": //ssh local port forwarding
+			fmt.Printf("\nEnter Host Name, DB name, DB password and Port")
+			_, err := fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
+			if err != nil {
+				fmt.Println(err)
 			}
-			inputReader := bufio.NewReader(os.Stdin)
-			input, erro := inputReader.ReadString('\n')
-			if erro != nil {
-				fmt.Println("Errors reading connection.")
-				return
-			}
-			b := []byte(input)
-			conn.Write(b)
-		}
-		break
+			dbWorker()
+			break
 
-	case "-cp":
-	case "cp": //ssh copy
-		fmt.Printf("\nEnter Host name, User name and Password: ")
-		_, err := fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
-		if err != nil {
-			fmt.Println(err)
+		case "--help":
+		case "help":
+			fmt.Println(help)
+			break
+		case "q":
+		case "Q":
+		case "-q":
+		case "-Q":
+			os.Exit(1)
+			break
+		default:
+			fmt.Printf("\nInvalid option.\n")
+			break
 		}
-		fmt.Printf("\nEnter File location, File name: ")
-		_, err = fmt.Scanf("%s, %s", &fileLocation, &fileName)
-		if err != nil {
-			fmt.Println(err)
-		}
+	} //end infinite loop
+}
 
-		config := &server.SSHClientConfig{
-			User:     userName,
-			Password: passWord,
-			Host:     hostName,
-		}
-		sshclient := server.NewSSHClient(config)
-		sshclient.MaxDataThroughput = MAXTHROUGHPUT
-		stdout, stderr, erru := server.UploadFile(hostName, fileLocation, fileName)
-		if erru != nil {
-			log.Panicln(erru)
-		}
-
-		if stderr != "" {
-			log.Panicln(stderr)
-		}
-
-		log.Println("File sent" + stdout)
-		break
-
-	case "pf":
-	case "-pf": //ssh server forwarding
-		fmt.Printf("\nEnter Local BindAddress, Remote addr, ssh server addr, username, password")
-		_, err := fmt.Scanf("%s, %s, %s, %s, %s", &bindaddr, &remoteaddr, &hostName, &userName, &passWord)
-		if err != nil {
-			fmt.Println(err)
-		}
-		srv := new(server.LocalForwardServer)
-		srv.LocalBindAddress = bindaddr
-		srv.RemoteAddress = remoteaddr
-		srv.SshServerAddress = hostName
-		srv.SshUserPassword = userName
-		srv.SshUserName = passWord
-		go srv.Start(dbWorker)
-		defer srv.Stop()
-
-	case "lf":
-	case "-lf": //ssh local port forwarding
-		fmt.Printf("\nEnter Host Name, DB name, DB password and Port")
-		_, err := fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
-		if err != nil {
-			fmt.Println(err)
-		}
-		dbWorker()
-		break
-
-	case "--help": case "help":
-		fmt.Println(help)
-		break
-	default:
-		fmt.Printf("\nInvalid option.\n")
-		os.Exit(1)
-		break
+func sshForward() {
+	fmt.Printf("\nEnter Local BindAddress, Remote addr, ssh server addr, username, password")
+	_, err := fmt.Scanf("%s, %s, %s, %s, %s", &bindaddr, &remoteaddr, &hostName, &userName, &passWord)
+	if err != nil {
+		fmt.Println(err)
 	}
+
+	srv := new(server.LocalForwardServer)
+	srv.LocalBindAddress = bindaddr
+	srv.RemoteAddress = remoteaddr
+	srv.SshServerAddress = hostName
+	srv.SshUserPassword = userName
+	srv.SshUserName = passWord
+	go srv.Start(dbWorker)
+	defer srv.Stop()
+}
+
+func sshCopy() {
+	fmt.Printf("\nEnter Host name, User name and Password: ")
+	_, err := fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("\nEnter File location, File name: ")
+	_, err = fmt.Scanf("%s, %s", &fileLocation, &fileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	config := &server.SSHClientConfig{
+		User:     userName,
+		Password: passWord,
+		Host:     hostName,
+	}
+	sshclient := server.NewSSHClient(config)
+	sshclient.MaxDataThroughput = MAXTHROUGHPUT
+	stdout, stderr, erru := server.UploadFile(hostName, fileLocation, fileName)
+	if erru != nil {
+		log.Panicln(erru)
+	}
+
+	if stderr != "" {
+		log.Panicln(stderr)
+	}
+
+	log.Println("File sent" + stdout)
+	return
+}
+
+func sshLogin() {
+	fmt.Printf("\nEnter Host name, User name and Password: ")
+	_, er := fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
+	if er != nil {
+		fmt.Println(er)
+	}
+
+	server := &hostServer{
+		Host: hostName,
+	}
+
+	go server.Start()
+	time.Sleep(time.Second)
+	conn, err := net.Dial("tcp", ":8080")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer conn.Close()
+	fmt.Println("Connected to ssh server!")
+	go onMessageReceived(conn)
+	for {
+		if exitCode {
+			break
+		}
+		inputReader := bufio.NewReader(os.Stdin)
+		input, erro := inputReader.ReadString('\n')
+		if erro != nil {
+			fmt.Println("Errors reading connection.")
+			return
+		}
+		b := []byte(input)
+		conn.Write(b)
+	}
+	return
 }
 
 func dbWorker() {
