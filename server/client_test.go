@@ -7,8 +7,8 @@ import (
 func Test_Cmd(t *testing.T) {
 	sshconfig := &SSHClientConfig{
 		User:     "user",
-		Password: "pwd",
-		Host:     "11.11.22.22",
+		Password: "user",
+		Host:     "192.168.1.1",
 	}
 
 	sshclient := NewSSHClient(sshconfig)

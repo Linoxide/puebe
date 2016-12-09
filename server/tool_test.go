@@ -29,23 +29,23 @@ func Test_mutiCmd(t *testing.T) {
 	config := &SSHClientConfig{
 		User:     "dummy",
 		Password: "login",
-		Host:     "192.24.2.11.10",
+		Host:     "192.168.1.1",
 	}
 	NewSSHClient(config)
 
 	config2 := &SSHClientConfig{
 		User:     "hello",
 		Password: "server",
-		Host:     "8.8.8.8",
+		Host:     "10.10.0.1",
 	}
 	NewSSHClient(config2)
-	stdout, _, _, err := ExecuteCmd("pwd", "8.8.8.8")
+	stdout, _, _, err := ExecuteCmd("pwd", "10.10.0.1")
 	if err != nil {
 		t.Error(err)
 	}
 	t.Log(stdout)
 
-	stdout, _, _, err = ExecuteCmd("pwd", "114.215.151.48")
+	stdout, _, _, err = ExecuteCmd("pwd", "127.0.0.1")
 	if err != nil {
 		t.Error(err)
 	}
