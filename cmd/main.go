@@ -34,8 +34,6 @@ var (
 	port         int
 )
 
-help  := "puebe OPTION [sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]"
-
 const bufferSize = 1024 * 4
 const maxThroughPut = 6553600
 
@@ -118,6 +116,7 @@ func handleConn(conn net.Conn) {
 func main() {
 
 	var option string
+	help := "\nOPTIONS [sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward] [--help Help] [-q Quit]\n"
 
 	fmt.Printf("\nPUEBE SSH TOOL\n")
 
