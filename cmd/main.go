@@ -34,12 +34,12 @@ var (
 	port         int
 )
 
-var help string = "puebe OPTION [sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]"
+help  := "puebe OPTION [sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]"
 
-const BUFFER_SIZE = 1024 * 4
-const MAXTHROUGHPUT = 6553600
+const bufferSize = 1024 * 4
+const maxThroughPut = 6553600
 
-var buf = make([]byte, BUFFER_SIZE) //holds buffer variable
+var buf = make([]byte, bufferSize) //holds buffer variable
 
 //ssh server structure.
 type hostServer struct {
@@ -62,7 +62,7 @@ func (s *hostServer) Start() {
 }
 
 func onMessageReceived(conn net.Conn) {
-	buffer := make([]byte, BUFFER_SIZE)
+	buffer := make([]byte, bufferSize)
 	for {
 		n, err := conn.Read(buffer)
 		if err == io.EOF {
@@ -210,7 +210,7 @@ func sshCopy() {
 		Host:     hostName,
 	}
 	sshclient := server.NewSSHClient(config)
-	sshclient.MaxDataThroughput = MAXTHROUGHPUT
+	sshclient.MaxDataThroughput = maxThroughPut
 	stdout, stderr, erru := server.UploadFile(hostName, fileLocation, fileName)
 	if erru != nil {
 		log.Panicln(erru)
