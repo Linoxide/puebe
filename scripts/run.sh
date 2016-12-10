@@ -6,6 +6,6 @@ echo "puebe binary dir:" "$DIR"
 
 pushd "$DIR" >/dev/null
 
-go run cmd/main.go --gui-dir="${DIR}/src/gui/static/" $@
+go run cmd/puebe.go --gui-dir="${DIR}/src/gui/static/" $@
 
 popd >/dev/null
