@@ -36,8 +36,8 @@ clean:
 
 install:
 	@echo "+ $@"
-	@go install ./... 
+	@go install ./...
 	
 run: 
 	@echo "+ $@"
-	go run ./cmd/main.go
+	@sh ./run.sh
