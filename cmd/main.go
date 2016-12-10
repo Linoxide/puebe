@@ -17,7 +17,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-//Variables to start ssh server client
+//TODO: Manage invalid data input to ssh client
+//Variables to start ssh client
 var (
 	exitCode     bool
 	hostName     string
@@ -116,7 +117,7 @@ func handleConn(conn net.Conn) {
 func main() {
 
 	var option string
-	help := "\nOPTIONS [sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward] [--help Help] [-q Quit]\n"
+	help := "\nOPTIONS [sh ssh login] [-cp file transfer] [-pf ssh server forward] \n[-lf local port forward] [--help Help] [-q Quit]\n"
 
 	fmt.Printf("\nPUEBE SSH TOOL\n")
 
@@ -158,6 +159,10 @@ func main() {
 			break
 
 		case "--help":
+		case "h":
+		case "-h":
+		case "H":
+		case "-H":
 		case "help":
 			fmt.Println(help)
 			break
