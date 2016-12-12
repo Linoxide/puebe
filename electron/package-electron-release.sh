@@ -18,9 +18,9 @@ OSX64_RES="${OSX64}/${OSX64_APP}/Contents/Resources/app"
 WIN64_RES="${WIN64}/resources/app"
 LNX64_RES="${LNX64}/resources/app"
 
-OSX64_SRC="${OSX64_RES}/src"
-WIN64_SRC="${WIN64}/src"
-LNX64_SRC="${LNX64}/src"
+OSX64_SRC="${OSX64_RES}/server"
+WIN64_SRC="${WIN64}/server"
+LNX64_SRC="${LNX64}/server"
 
 # Capitalize OS X .app for convention
 if [ -e "${OSX64}/puebe.app" ]; then
