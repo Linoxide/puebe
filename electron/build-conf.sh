@@ -42,3 +42,30 @@ LNX64_ELN_PLT="linux-x64"
 LNX64_ELN_ZIP="${LNX64_ELN}.tar.gz"
 LNX64_STL="puebe-${PUEBE_VERSION}-bin-linux-x64"
 LNX64_STL_ZIP="${LNX64_STL}.tar.gz"
+
+# Install pre-requisites
+echo "Installing pre-requisites"
+sudo dnf install npm
+sudo dnf install nodejs-legacy
+sudo npm cache clean -f
+sudo npm install -g n
+sudo n stable
+
+# Verify node and npm
+
+echo "Node & NPM versions"
+node -v
+npm -v
+
+
+#Install gulp
+echo "Install gulp"
+npm rm --global gulp
+npm install --global gulp-cli
+
+#install Node deps
+echo "Requirements installed, Node deps downloading"
+npm install
+
+# Compiling code
+echo "Dependency Mgt complete"
