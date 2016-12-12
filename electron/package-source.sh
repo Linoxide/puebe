@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-SRC_TAR="tmp-src-snapshot.tar"
+SRC_TAR="tmp-server-snapshot.tar"
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -9,7 +9,7 @@ pushd "${SCRIPTDIR}"
 
 tar cvf "${SRC_TAR}" --owner=0 --group=0 --exclude=electron \
     --exclude=node_modules --exclude=_deprecated --exclude='.[^/\.]*' \
-    "../src" "../cmd" "../run.sh" "../test.sh" "../GLOCKFILE" "../README.md" \
+    "../server" "../cmd" "../run.sh" "../README.md" \
     >/dev/null
 
 popd >/dev/null

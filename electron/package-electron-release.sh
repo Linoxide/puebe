@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-# Copies gox-compiled skycoin binaries and compiled GUI assets
+# Copies gox-compiled puebe binaries and compiled GUI assets
 # into an electron package
 
 . build-conf.sh
@@ -23,8 +23,8 @@ WIN64_SRC="${WIN64}/src"
 LNX64_SRC="${LNX64}/src"
 
 # Capitalize OS X .app for convention
-if [ -e "${OSX64}/skycoin.app" ]; then
-    mv "${OSX64}/skycoin.app" "${OSX64}/${OSX64_APP}"
+if [ -e "${OSX64}/puebe.app" ]; then
+    mv "${OSX64}/puebe.app" "${OSX64}/${OSX64_APP}"
 fi
 
 DESTSRCS=()
@@ -53,11 +53,11 @@ function copy_if_exists {
     fi
 }
 
-echo "Copying skycoin binaries"
+echo "Copying puebe binaries"
 
-copy_if_exists "skycoin_darwin_amd64" "$OSX64_RES" "skycoin" "$OSX64_SRC"
-copy_if_exists "skycoin_windows_amd64.exe" "$WIN64_RES" "skycoin.exe" "$WIN64_SRC"
-copy_if_exists "skycoin_linux_amd64" "$LNX64_RES" "skycoin" "$LNX64_SRC"
+copy_if_exists "puebe_darwin_amd64" "$OSX64_RES" "puebe" "$OSX64_SRC"
+copy_if_exists "puebe_windows_amd64.exe" "$WIN64_RES" "puebe.exe" "$WIN64_SRC"
+copy_if_exists "puebe_linux_amd64" "$LNX64_RES" "puebe" "$LNX64_SRC"
 
 # Copy the source for reference
 # tar it with filters, move it, then untar in order to do this

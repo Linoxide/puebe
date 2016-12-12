@@ -13,9 +13,9 @@ OSX64="${STL_OUTPUT}/${OSX64_STL}"
 WIN64="${STL_OUTPUT}/${WIN64_STL}"
 LNX64="${STL_OUTPUT}/${LNX64_STL}"
 
-OSX64_SRC="${OSX64}/src"
-WIN64_SRC="${WIN64}/src"
-LNX64_SRC="${LNX64}/src"
+OSX64_SRC="${OSX64}/server"
+WIN64_SRC="${WIN64}/server"
+LNX64_SRC="${LNX64}/server"
 
 DESTSRCS=()
 
@@ -49,12 +49,12 @@ function copy_if_exists {
     fi
 }
 
-echo "Copying skycoin binaries"
+echo "Copying puebe binaries"
 
 # copy binaries
-copy_if_exists "skycoin_darwin_amd64" "$OSX64" "skycoin" "$OSX64_SRC"
-copy_if_exists "skycoin_windows_amd64.exe" "$WIN64" "skycoin.exe" "$WIN64_SRC"
-copy_if_exists "skycoin_linux_amd64" "$LNX64" "skycoin" "$LNX64_SRC"
+copy_if_exists "puebe_darwin_amd64" "$OSX64" "puebe" "$OSX64_SRC"
+copy_if_exists "puebe_windows_amd64.exe" "$WIN64" "puebe.exe" "$WIN64_SRC"
+copy_if_exists "puebe_linux_amd64" "$LNX64" "puebe" "$LNX64_SRC"
 
 # Copy the source for reference
 # tar it with filters, move it, then untar in order to do this

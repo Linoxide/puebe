@@ -14,7 +14,7 @@ STL_OUTPUT=".standalone_output"
 
 FINAL_OUTPUT="release"
 
-GUI_DIST_DIR="../src/gui/static/dist"  # Do not append "/" to this path
+GUI_DIST_DIR="../gui/static/dist"  # Do not append "/" to this path
 
 # Variable suffix guide:
 # _APP -- name of the OS X app
