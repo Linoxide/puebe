@@ -33,7 +33,7 @@ vet:
 
 clean:
 	@echo "+ $@"
-	@rm -rf ./cmd/puebe
+	@rm -rf ./cmd/puebe/puebe
 
 install:
 	@echo "+ $@"
