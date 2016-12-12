@@ -12,7 +12,8 @@ all: build fmt lint vet test install run
 
 build:
 	@echo "+ $@"
-	@go build -tags "$(BUILDTAGS) cgo"  ./... 
+	@go build -tags "$(BUILDTAGS) cgo"  ./...
+	@sh ./electron/build.sh
 
 fmt:
 	@echo "+ $@"
@@ -32,7 +33,7 @@ vet:
 
 clean:
 	@echo "+ $@"
-	@rm -rf ./cmd/main
+	@rm -rf ./cmd/puebe
 
 install:
 	@echo "+ $@"

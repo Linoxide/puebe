@@ -1,4 +1,4 @@
-package main
+package puebe
 
 import (
 	"bufio"
@@ -17,7 +17,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-//TODO: Manage invalid data input to ssh client
+//TODO: Validate input dataManage invalid data input to ssh client
 //Variables to start ssh client
 var (
 	exitCode     bool
