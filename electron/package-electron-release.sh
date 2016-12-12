@@ -23,9 +23,9 @@ WIN64_SRC="${WIN64}/server"
 LNX64_SRC="${LNX64}/server"
 
 # Capitalize OS X .app for convention
-if [ -e "${OSX64}/puebe.app" ]; then
-    mv "${OSX64}/puebe.app" "${OSX64}/${OSX64_APP}"
-fi
+#if [ -e "${OSX64}/puebe.app" ]; then
+#    mv "${OSX64}/puebe.app" "${OSX64}/${OSX64_APP}"
+#fi
 
 DESTSRCS=()
 
