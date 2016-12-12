@@ -11,6 +11,11 @@ fi
 
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+echo "Compiling source with gox"
+
+# Build with gox here and make the other scripts skip it
+./gox.sh "$GOX_OSARCH" "$GOX_OUTPUT"
+
 pushd "$SCRIPTDIR" >/dev/null
 
 echo "Installing node modules"
@@ -20,12 +25,12 @@ echo
 echo "==========================="
 echo "Building standalone release"
 
-SKIP_COMPILATION=1 ./build-standalone-release.sh
+SKIP_COMPILATION=1 ./build-standalone-release.sh "$GOX_OSARCH"
 
 echo
 echo "==========================="
 echo "Building electron release"
 
-SKIP_COMPILATION=1 ./build-electron-release.sh
+SKIP_COMPILATION=1 ./build-electron-release.sh "$GOX_OSARCH"
 
 popd >/dev/null

@@ -35,6 +35,10 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd "$SCRIPTDIR" >/dev/null
 
+if [ $SKIP_COMPILATION -ne 1 ]; then
+	./gox.sh "$GOX_OSARCH" "$GOX_OUTPUT"
+fi
+
 if [ -e "$ELN_OUTPUT" ]; then
     rm -r "$ELN_OUTPUT"
 fi
