@@ -1,7 +1,7 @@
 {
-  "name": "Linoxide",
-  "productName": "puebe",
-  "version": "0.8.1",
+  "name": "puebe",
+  "productName": "Puebe",
+  "version": "0.0.1",
   "main": "electron-main.js",
   "dependencies": {
     "electron-debug": "^1.0.1"
