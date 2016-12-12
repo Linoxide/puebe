@@ -17,6 +17,7 @@ _testmain.go
 .gox_output/
 .standalone_output/
 tmp-src-snapshot.tar
+.electron_output/
 
 
 # Logs
