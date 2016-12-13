@@ -212,9 +212,9 @@ export class loadNodeComponent implements OnInit {
                     //Load Balance for each node end
 
                 },
-                err => console.log("Error on load node: "+err),
+                err => console.log("Error on loading node: "+err),
                 () => {
-                  //console.log('Node load done')
+                  //console.log('Node load successful')
                 }
             );
     }
@@ -231,7 +231,7 @@ export class loadNodeComponent implements OnInit {
                 response => {
                     this.isValidAddress = true;
                 }, err => {
-                  //console.log("Error on load balance: " + err)
+                  //console.log("Error on ssh address: " + err)
                   this.isValidAddress = false;
                 }, () => {
 
