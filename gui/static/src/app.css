@@ -57,7 +57,7 @@ br {
   /*color:#a3b0bb;*/
   color: #fff;
 }
-#sky-header {
+#puebe-header {
   width: 100%;
   background: #dbe1e6 url("assets/images/puebe_logo.png") 14px 12px no-repeat;
   height: 60px;
@@ -65,7 +65,7 @@ br {
   position: relative;
 }
 
-.wallet-menu {
+.node-menu {
   position: absolute;
   top: 4px;
 }
@@ -73,7 +73,7 @@ br {
   max-width: 950px;
   position:relative;
 }
-.wallet-buttons {
+.node-buttons {
   width: 100%;
   clear: both;
   padding-top: 10px;
@@ -99,40 +99,40 @@ br {
 #send_amount {
   width: 20%;
 }
-table#overview-wallet {
+table#overview-node {
   width: 100%;
   float: left;
   margin-right: 10px;
   margin-top: 10px;
 }
-#overview-wallet,
-#overview-wallet tr {
+#overview-node,
+#overview-node tr {
   background-color: #fff;
 }
-#overview-wallet tr.dark-row {
+#overview-node tr.dark-row {
   background-color: #f2f5f8;
 }
-#overview-wallet a {
+#overview-node a {
   margin-left: 10px;
 }
-#overview-wallet a:first-of-type {
+#overview-node a:first-of-type {
   margin-left: 0px;
 }
-#transaction-table {
+#node-table {
   width: 100%;
   background-color: #fff;
 }
-#transaction-table button,
-#transaction-table .btn-group {
+#node-table button,
+#node-table .btn-group {
   width: 100%;
 }
-#transaction-table tr {
+#node-table tr {
   background-color: #fff;
 }
-#transaction-table td {
+#node-table td {
   text-align: left;
 }
-#transaction-table .dark-row {
+#node-table .dark-row {
   background-color: #f2f5f8;
   cursor: pointer;
 }
@@ -141,7 +141,7 @@ table#overview-wallet {
   background-color: #fff;
 }
 #pending-table button,
-#transaction-table .btn-group {
+#node-table .btn-group {
   width: 100%;
 }
 #pending-table tr {
@@ -172,11 +172,11 @@ label {
 .carousel a {
   cursor: pointer;
 }
-#sky-center {
+#puebe-center {
   position: relative;
   padding: 15px;
 }
-#sky-footer {
+#puebe-footer {
   display:none;
   width: 100%;
   height: 12%;
@@ -193,13 +193,13 @@ label {
   margin-bottom: 0;
   display: inline-block;
 }
-#sky-footer .percent {
+#puebe-footer .percent {
   display: inline-block;
   position: relative;
   bottom: 5px;
   left: 2px;
 }
-#sky-footer .signal {
+#puebe-footer .signal {
   position: absolute;
   right: 25px;
   top: 21px;
@@ -355,13 +355,13 @@ label {
 .qr-container .qrAddress{
   text-align: center;
 }
-.header-for-total-sky {
+.header-for-total-puebe {
   background: rgb(234, 239, 243) none repeat scroll 0% 0%;
   padding: 10px 20px;
   border: 1px solid rgb(221, 221, 221);
   margin-bottom:15px;
 }
-.total-sky-text {
+.total-puebe-text {
   font-size: 16px;
 }
 .text-underline {
