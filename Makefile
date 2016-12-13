@@ -13,6 +13,7 @@ all: build fmt lint vet test install run
 build:
 	@echo "+ $@"
 	@go build -tags "$(BUILDTAGS) cgo"  ./...
+	@sh ./gui/static/gui.sh
 	@sh ./electron/build.sh
 
 fmt:
