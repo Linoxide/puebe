@@ -70,22 +70,13 @@ export class loadNodeComponent implements OnInit {
     //Declare default variables
     nodes : Array<any>;
     
-    //user details
-    userName: string;
-    Password: string;
-
     QrAddress: string;
     QrIsVisible: boolean;
 
     NewNodeIsVisible: boolean;
 
-    nodeName: string;
-    nodeId: string;
-    nodeType: string;
-    nodeZone: string;
 
     connections: Array<any>;
-    defaultConnections: Array<any>;
     NewDefaultConnectionIsVisible : boolean;
     EditDefaultConnectionIsVisible : boolean;
     
@@ -109,7 +100,6 @@ export class loadNodeComponent implements OnInit {
         this.loadNode();
         this.selectedNode = {};
        
-        this.loadOutputs();
         this.isValidAddress = false;
 
         //Set interval function for loading nodes every 15 seconds
@@ -164,12 +154,16 @@ export class loadNodeComponent implements OnInit {
                       })
                       this.nodes = data;
                       if (this.nodes.length > 0) {
-                        this.onSelectNode(this.nodes[0].meta.nodeName);
+                        this.onSelectNode(this.nodes[0].meta.nodeId);
                       }
                     } else {
                       data.map((w)=>{
                         var old = _.find(this.nodes, (o)=>{
-                          return o.meta.nodeName === w.meta.nodeName;
+                        	o.meta.nodeType == w.meta.nodeType;
+                        	o.meta.nodeName == w.meta.nodeName;
+                        	o.meta.nodeZone == w.meta.nodeZone;
+                        	o.meta.nodeId == w.meta.nodeId;
+                          return o.meta.nodeId;
                         })
 
                         if(old) {
@@ -187,9 +181,9 @@ export class loadNodeComponent implements OnInit {
                     var inc;
                     for(var item in data){
                         var name = data[inc].meta.nodeName;
-                        var id = data[inc].meta.instanceid;
-                        var type = data[inc].meta.instancetype;
-                        var zone = data[inc].meta.instancezone;
+                        var id = data[inc].meta.nodeId;
+                        var type = data[inc].meta.nodeType;
+                        var zone = data[inc].meta.nodezone;
                         this.loadNodeItem(name,id, type, zone, inc);
                         inc;
                     }
@@ -221,35 +215,37 @@ export class loadNodeComponent implements OnInit {
                 })
       }
     }
-    loadNodeItem(address, inc){
+    loadNodeItem(name,id, type, zone, inc){
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        this.http.get('/node/connections?id=' + address, { headers: headers })
+        this.http.get('/node/?id=' + id, { headers: headers })
             .map((res) => res.json())
             .subscribe(
                 //Response from API
                 response => {
                     //console.log('load done: ' + inc, response);
-                    this.nodes[inc].balance = response.confirmed.coins / 1000000;
-                    this.totalPuebe += 1;
-                }, err => console.log("Error on load balance: " + err), () => {
-                  //console.log('Balance load done')
+                    this.nodes[inc].connection = response.confirmed.connection;
+					
+                }, err => console.log("Error on adding new node " + err), () => {
+                  //console.log('New node added.')
                 })
-        //get address balances
+                
+        //get connection addresses
         this.nodes[inc].entries.map((entry)=>{
-          this.http.get('/balance?addrs=' + entry.address, { headers: headers })
+          this.http.get('/node?address=' + entry.address, { headers: headers })
               .map((res) => res.json())
               .subscribe(
                   //Response from API
                   response => {
-                      //console.log('balance:' + entry.address, response);
-                      entry.balance = response.confirmed.coins / 1000000;
-                  }, err => console.log("Error on load balance: " + err), () => {
-                    //console.log('Balance load done')
+                      //console.log('Address:' + entry.address, response);
+                      entry.connection = response.confirmed.connection
+                  }, err => console.log("Error on loading connection address: " + err), () => {
+                    //console.log('connection address loaded')
                   })
         })
     }
+    
     loadConnections() {
         this.http.post('/node/connections', '')
             .map((res) => res.json())
@@ -263,28 +259,16 @@ export class loadNodeComponent implements OnInit {
     
    
     loadDefaultConnections() {
-        this.http.post('/node/defaultConnections', '')
+        this.http.post('/node/connections', '')
             .map((res) => res.json())
             .subscribe(data => {
                 //console.log("default connections", data);
                 this.defaultConnections = data;
-            }, err => console.log("Error on load default connection: " + err), () => {
-              //console.log('Default connections load done')
+            }, err => console.log("Error on loading default connection: " + err), () => {
+              //console.log('Default connections loaded')
             });
     }
-    loadOutputs() {
-        var headers = new Headers();
-        headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        this.http.get('/outputs', { headers: headers })
-            .map((res) => res.json())
-            .subscribe(data => {
-                this.outputs = _.sortBy(data, function(o){
-                    return o.address;
-                });
-            }, err => console.log("Error on load outputs: " + err), () => {
-              //console.log('Connection load done')
-            });
-    }
+    
     
     //Load progress function for Puebe
     loadProgress(){
@@ -313,7 +297,7 @@ export class loadNodeComponent implements OnInit {
     }
     //Show QR code function for show QR popup
     showQR(node){
-        this.QrAddress = node.entries[0].address;
+        this.QrAddress = node.meta[0].nodeId;
         this.QrIsVisible = true;
     }
     //Hide QR code function for hide QR popup
@@ -362,7 +346,7 @@ export class loadNodeComponent implements OnInit {
     
     
     //Add new node function for generate new node in Puebe
-    createNewNode(nodeName, address, Port, userName, Password){
+    createNewNode(nodename, address, port, user, pass){
 
         //check if label is duplicated
         var old = _.find(this.nodes, function(o){
@@ -379,15 +363,42 @@ export class loadNodeComponent implements OnInit {
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
 
         //Post method executed
-        var stringConvert = 'userName='+userNameName+'&Password='+Password;
+        var stringConvert = 'nodeName='+nodename'+'userName='+user'+'Password='+pass'+'Address='+address'+'Port='+port;
         this.http.post('/node/create', stringConvert, {headers: headers})
             .map((res:Response) => res.json())
             .subscribe(
                 response => {
                   console.log(response)
+                  
+			//to be fixed
+       		if(addressCount > 1) {
+                    var repeats = [];
+                    for(var i = 0; i < addressCount - 1 ; i++) {
+                      repeats.push(i)
+                    }
 
-      
-            
+                    async.map(repeats, (idx, callback) => {
+                    addNewAddress(this.loadNode())
+
+                      //Hide new node popup
+                      this.NewNodeIsVisible = false;
+                      alert("New node created successfully");
+                      //Load node for refresh list
+                      this.loadNode();
+                    })
+           	} else {
+               //Hide new node popup
+               this.NewNodeIsVisible = false;
+               alert("New node created successfully");
+               //Load node for refresh list
+               this.loadNode();
+           	}
+           	},
+                err => {
+                  console.log(err);
+                },
+                () => {}
+          );
     }
 
     //Edit existing node function
@@ -438,7 +449,7 @@ export class loadNodeComponent implements OnInit {
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        var stringConvert = 'label='+nodeName+'&id='+nodeid;
+        var stringConvert = 'label='+nodeName+'id='+nodeid;
         //Post method executed
         this.http.post('/node/update', stringConvert, {headers: headers})
             .map((res:Response) => res.json())
