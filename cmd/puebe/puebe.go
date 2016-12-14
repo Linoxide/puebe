@@ -55,7 +55,7 @@ type Config struct {
 	// If true, print the configured client web interface address and exit
 	PrintWebInterfaceAddress bool
 
-	// Data directory holds app data -- defaults to ~/.skycoin
+	// Data directory holds app data -- defaults to ~/.puebe
 	DataDirectory string
 	// GUI directory contains assets for the html gui
 	GUIDirectory string
@@ -92,7 +92,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
 		c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
-		"directory to store app data (defaults to ~/.skycoin)")
+		"directory to store app data (defaults to ~/.puebe)")
 	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
 		"connect to this ip only")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
@@ -141,14 +141,14 @@ func (c *Config) postProcess() {
 	}
 }
 
-func configureDaemon(c *Config) server.SSHClientConfig {
+func configureDaemon(c *Config) server.SSHClient {
 
-	var dc server.SSHClientConfig
-	dc.dataDir = c.DataDirectory
-	dc.Port = c.Port
-	dc.Host = c.Address
-	dc.User = c.WebInterfaceUser
-	dc.Pass = c.WebInterfacePass
+	var dc server.SSHClient
+	dc.SSHClientConfig.dataDir = c.DataDirectory
+	dc.SSHClientConfig.Port = c.Port
+	dc.SSHClientConfig.Host = c.Address
+	dc.SSHClientConfig.User = c.WebInterfaceUser
+	dc.SSHClientConfig.Pass = c.WebInterfacePass
 
 	return dc
 }
