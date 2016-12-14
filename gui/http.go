@@ -8,9 +8,8 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/Linoxide/puebe/server"
 	logging "github.com/op/go-logging"
-
-	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -25,7 +24,7 @@ const (
 
 // Begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
-func LaunchWebInterface(host, staticDir string, daemon *ssh.Client) error {
+func LaunchWebInterface(host, staticDir string, daemon *server.SSHClient) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 	logger.Info("Web resources directory: %s", staticDir)
@@ -47,7 +46,7 @@ func LaunchWebInterface(host, staticDir string, daemon *ssh.Client) error {
 
 // Begins listening on https://$host, for enabling remote web access
 // Uses HTTPS
-func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *ssh.Client, userName, Password string) error {
+func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *server.SSHClient, userName, Password string) error {
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the default user name", userName)
 	logger.Info("Using %s for the default password", Password)
@@ -58,11 +57,9 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *ssh.Client, userNam
 		return err
 	}
 
-	daemon.User = userName
-	daemon.Password = Password
-
-	config := makeConfig(daemon.User, daemon.Password, daemon.Privatekey)
-
+	daemon.SSHClientConfig.User = userName
+	daemon.SSHClientConfig.Password = Password
+	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return err
 	}
@@ -88,7 +85,7 @@ func serve(listener net.Listener, mux *http.ServeMux) {
 }
 
 // Creates an http.ServeMux with handlers registered
-func NewGUIMux(appLoc string, daemon *ssh.Client) *http.ServeMux {
+func NewGUIMux(appLoc string, daemon *server.SSHClient) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", newIndexHandler(appLoc))
 
