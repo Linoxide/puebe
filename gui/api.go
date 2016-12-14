@@ -3,43 +3,111 @@ package gui
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/Linoxide/puebe/server"
 )
 
-
 //Saves user login information together with connection data for
 //nodes
+const NodeExt = "nde"
+
+type Nodes map[string]*Node
+
 type Node struct {
-	Meta    MetaData `json:"meta"`
-	Entries []KeyEntry `json:"entries"`
-	connection *server.SSHClient `json:"connection`
+	Meta        MetaData          `json:"meta"`
+	Entries     []KeyEntry        `json:"entries"`
+	connection  *server.SSHClient `json:"connection`
 	isConnected bool
 }
 
 type MetaData struct {
 	nodeName string `json:"nodeName"`
 	nodeType string `json:"nodeType"`
-	nodeId	 int	`json:"nodeId"`
+	nodeId   int    `json:"nodeId"`
 	nodeZone string `json:"nodeZone"`
 }
 
 type KeyEntry struct {
-	Address 	string 	`json:"address"`
-	Port  		int 	`json:"Port"`
-	userName  	string 	`json:"userName"`
-	Password 	string 	`json:"Password"`
+	Address  string `json:"address"`
+	Port     int    `json:"Port"`
+	userName string `json:"userName"`
+	Password string `json:"Password"`
 }
 
+func LoadReadableNode(filename string) (Node, error) {
+	w := Node{}
+	err := LoadJSON(filename, &w)
+	return w, err
+}
+
+// Saves to filename
+func (self *Node) Save(filename string) error {
+	// logger.Info("Saving readable node to %s with filename %s", filename,
+	// 	self.Meta["filename"])
+	return SaveJSON(filename, self, 0600)
+}
+
+// LoadNodes Loads all nodes contained in node dir.  If any regular file in node
+// dir fails to load, loading is aborted and error returned.  Only files with
+// extension NodeExt are considered. If encounter old node file, then backup
+// the node file into dir/backup/
+func LoadNodes(dir string) (Nodes, error) {
+	//
+	entries, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	// create backup dir if not exist
+	bkpath := dir + "/backup/"
+	if _, err := os.Stat(bkpath); os.IsNotExist(err) {
+		// create the backup dir
+		logger.Critical("create node backup dir, %v", bkpath)
+		if err := os.Mkdir(bkpath, 0777); err != nil {
+			return nil, err
+		}
+	}
+
+	//
+	nodes := make(Nodes, 0)
+	for i, e := range entries {
+		if e.Mode().IsRegular() {
+			name := e.Name()
+			if !strings.HasSuffix(name, NodeExt) {
+				continue
+			}
+			fullpath := filepath.Join(dir, name)
+			w := &Node{}
+			err := w.Load(fullpath)
+			if err != nil {
+				return nil, err
+			}
+			err = w.Save(name)
+			if err != nil {
+				return nil, err
+			}
+			logger.Info("Loaded node from %s", fullpath)
+			nodes[name] = w
+		}
+	}
+	return nodes, nil
+}
 
 // Generates hash for user login data
 // GET/POST information for new ssh connections in nodes.
-// 
+//
 func apiCreateAddressHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -49,49 +117,24 @@ func apiCreateAddressHandler(gateway *server.SSHClient) http.HandlerFunc {
 			return
 		}
 
-		var node struct Node
+		node := new(Node)
 		seedvalue, err := strconv.Atoi(seed)
-		rand.Seed(seedvalue)
-		node.Nodes.Meta.nodeId = rand.Int()
-		
-		ret := node
-		SendOr404(w, ret)
+		rand.Seed(int64(seedvalue))
+		node.Meta.nodeId = rand.Int()
+		SendOr404(w, node)
 	}
 }
 
-
 func RegisterApiHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
-	//  Generates node puebe addresses 
+	//  Generates node puebe addresses
 	// GET/POST
 	//	seed - string - seed hash
 	mux.HandleFunc("/node/create-address", apiCreateAddressHandler(gateway))
 }
 
-
 /**
  * Functions for handling files within the web application
  */
-// If dir is "", uses the default directory of ~/.puebe.  The path to dir
-// is created, and the dir used is returned
-func InitDataDir(dir string) string {
-	//DataDir = dir
-	if dir == "" {
-		logger.Error("data directory is nil")
-	}
-
-	home := UserHome()
-	if home == "" {
-		logger.Warning("Failed to get home directory")
-		DataDir = filepath.Join("./", dir)
-	} else {
-		DataDir = filepath.Join(home, dir)
-	}
-
-	if err := os.MkdirAll(DataDir, os.FileMode(0700)); err != nil {
-		logger.Error("Failed to create directory %s: %v", DataDir, err)
-	}
-	return DataDir
-}
 
 func UserHome() string {
 	// os/user relies on cgo which is disabled when cross compiling
@@ -109,6 +152,28 @@ func UserHome() string {
 	}
 
 	return os.Getenv("HOME")
+}
+
+// If dir is "", uses the default directory of ~/.puebe.  The path to dir
+// is created, and the dir used is returned
+func InitDataDir(dir string) string {
+	DataDir := dir
+	if dir == "" {
+		logger.Error("data directory is nil")
+	}
+
+	home := UserHome()
+	if home == "" {
+		logger.Warning("Failed to get home directory")
+		DataDir = filepath.Join("./", dir)
+	} else {
+		DataDir = filepath.Join(home, dir)
+	}
+
+	if err := os.MkdirAll(DataDir, os.FileMode(0700)); err != nil {
+		logger.Error("Failed to create directory %s: %v", DataDir, err)
+	}
+	return DataDir
 }
 
 func LoadJSON(filename string, thing interface{}) error {
@@ -196,8 +261,6 @@ func ResolveResourceDirectory(path string) string {
 		filepath.Join(rt_directory, "../../../", filepath.Dir(path)),
 	}
 
-	
-
 	//must be an absolute path
 	//error and problem and crash if not absolute path
 	for i, _ := range dirs {
@@ -213,4 +276,60 @@ func ResolveResourceDirectory(path string) string {
 	}
 	log.Panic("GUI directory not found")
 	return ""
+}
+
+func DetermineResourcePath(staticDir string, resourceDir string, devDir string) (string, error) {
+	//check "dev" directory first
+	appLoc := filepath.Join(staticDir, devDir)
+	if !strings.HasPrefix(appLoc, "/") {
+		// Prepend the binary's directory path if appLoc is relative
+		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			return "", err
+		}
+
+		appLoc = filepath.Join(dir, appLoc)
+	}
+
+	if _, err := os.Stat(appLoc); os.IsNotExist(err) {
+		//check dist directory
+		appLoc = filepath.Join(staticDir, resourceDir)
+		if !strings.HasPrefix(appLoc, "/") {
+			// Prepend the binary's directory path if appLoc is relative
+			dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+			if err != nil {
+				return "", err
+			}
+
+			appLoc = filepath.Join(dir, appLoc)
+		}
+
+		if _, err := os.Stat(appLoc); os.IsNotExist(err) {
+			return "", err
+		}
+	}
+
+	return appLoc, nil
+}
+
+func CopyFile(dst string, src io.Reader) (n int64, err error) {
+	// check the existence of dst file.
+	if _, err := os.Stat(dst); err == nil {
+		return 0, nil
+	}
+	err = nil
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	n, err = io.Copy(out, src)
+	return
 }
