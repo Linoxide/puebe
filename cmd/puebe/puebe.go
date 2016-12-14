@@ -13,11 +13,12 @@ import (
 	"strings"
 	"time"
 
-	logging "github.com/op/go-logging"
+	"github.com/Linoxide/puebe/gui"
 	"github.com/Linoxide/puebe/server"
-	"github.com/toqueteos/webbrowser"
 	_ "github.com/go-sql-driver/mysql"
+	logging "github.com/op/go-logging"
 	"github.com/scottkiss/gomagic/dbmagic"
+	"github.com/toqueteos/webbrowser"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -38,14 +39,14 @@ type Config struct {
 	//gnet uses this for TCP incoming and outgoing
 	Port int
 	//max connections to maintain
-	
+
 	//AddressVersion string
 	// Remote web interface
 	WebInterface      bool
 	WebInterfacePort  int
 	WebInterfaceAddr  string
 	WebInterfaceUser  string
-	WebInterfacePass   string
+	WebInterfacePass  string
 	WebInterfaceHTTPS bool
 
 	// Launch System Default Browser after client startup
@@ -62,14 +63,13 @@ type Config struct {
 	LogLevel logging.Level
 	logLevel string
 
-
 	// Will force it to connect to this ip:port, instead of waiting for it
 	// to show up as a peer
 	ConnectTo string
 }
 
 func (c *Config) register() {
-	
+
 	flag.StringVar(&c.Address, "address", c.Address,
 		"IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -100,9 +100,8 @@ func (c *Config) register() {
 
 }
 
-
 var devConfig Config = Config{
-	
+
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
 	Address: "",
@@ -115,7 +114,7 @@ var devConfig Config = Config{
 	WebInterfacePort:         9000,
 	WebInterfaceAddr:         "127.0.0.1",
 	WebInterfaceUser:         "root",
-	WebInterfacePass:          "root",
+	WebInterfacePass:         "root",
 	WebInterfaceHTTPS:        false,
 	PrintWebInterfaceAddress: false,
 	LaunchBrowser:            true,
@@ -123,7 +122,7 @@ var devConfig Config = Config{
 	DataDirectory: ".puebe",
 	// Web GUI static resources
 	GUIDirectory: "./src/gui/static/",
-	
+
 	ConnectTo: "",
 }
 
@@ -142,19 +141,17 @@ func (c *Config) postProcess() {
 	}
 }
 
-func configureDaemon(c *Config) SSHClient.SSHClientConfig {
-	
-	var dc SSHClientConfig
+func configureDaemon(c *Config) server.SSHClientConfig {
+
+	var dc server.SSHClientConfig
 	dc.dataDir = c.DataDirectory
 	dc.Port = c.Port
-	dc.Daemon.Port = c.Port
 	dc.Host = c.Address
 	dc.User = c.WebInterfaceUser
-	dc.Pass = c.WebInterfacePass 
-	
+	dc.Pass = c.WebInterfacePass
+
 	return dc
 }
-
 
 func Run(c *Config) {
 
@@ -171,20 +168,15 @@ func Run(c *Config) {
 		return
 	}
 
-
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan int)
 	go catchInterrupt(quit)
 	// Watch for SIGUSR1
 	go catchDebug()
 
-
 	dconf := configureDaemon(c)
-	node := server.NewSSHClient(dconf)
-	var err error
+	node := server.NewSessionWithChannel(dconf, quit, nil, 0)
 	go node.Connect()
-	
-
 
 	if c.WebInterface {
 		var err error
@@ -215,13 +207,11 @@ func Run(c *Config) {
 	}
 
 	<-quit
-	stopDaemon <- 1
 	close(node.connect)
 
 	logger.Info("Shutting down")
 	logger.Info("Goodbye")
 }
-
 
 func OpenBrowser(url string) error {
 	return webbrowser.Open(url)
@@ -232,7 +222,6 @@ func main() {
 	devConfig.Parse()
 	Run(&devConfig)
 }
-
 
 func catchInterrupt(quit chan<- int) {
 	sigchan := make(chan os.Signal, 1)
@@ -254,15 +243,3 @@ func catchDebug() {
 		}
 	}
 }
-
-func initLogging(level logging.Level, color bool) {
-	format := logging.MustStringFormatter(logFormat)
-	logging.SetFormatter(format)
-	for _, s := range logModules {
-		logging.SetLevel(level, s)
-	}
-	stdout := logging.NewLogBackend(os.Stdout, "", 0)
-	stdout.Color = color
-	logging.SetBackend(stdout)
-}
-
