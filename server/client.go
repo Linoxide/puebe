@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"net"
 	"strings"
@@ -60,7 +61,7 @@ func (c *SSHClient) maxThroughputControl() {
 	}
 }
 
-func (c *SSHClient) Connect() (conn *ssh.Client, err error) {
+func (c *SSHClient) Connect() (conn *ssh.Client) {
 	if c.remoteConn != nil {
 		return
 	}
@@ -77,17 +78,17 @@ func (c *SSHClient) Connect() (conn *ssh.Client, err error) {
 	if c.DialTimeoutSecond > 0 {
 		connNet, err := net.DialTimeout("tcp", host+":"+port, time.Duration(c.DialTimeoutSecond)*time.Second)
 		if err != nil {
-			return nil, err
+			return
 		}
 		sc, chans, reqs, err := ssh.NewClientConn(connNet, host+":"+port, config)
 		if err != nil {
-			return nil, err
+			return
 		}
 		conn = ssh.NewClient(sc, chans, reqs)
 	} else {
-		conn, err = ssh.Dial("tcp", host+":"+port, config)
+		conn, err := ssh.Dial("tcp", host+":"+port, config)
 		if err != nil {
-			return
+			return conn
 		}
 	}
 	log.Println("dial ssh success")
@@ -99,8 +100,9 @@ func (c *SSHClient) TransferData(target string, data []byte) (stdout, stderr str
 	go c.maxThroughputControl()
 
 	if c.isConnected == false {
-		_, err = c.Connect()
-		if err != nil {
+		conn := c.Connect()
+		if conn == nil {
+			err = errors.New("Could not make connection")
 			return
 		}
 	}
@@ -145,8 +147,9 @@ func (c *SSHClient) TransferData(target string, data []byte) (stdout, stderr str
 
 func (c *SSHClient) Cmd(cmd string, sn *SshSession, deadline *time.Time, idleTimeout int) (output, errput string, currentSession *SshSession, err error) {
 	if c.isConnected == false {
-		_, err = c.Connect()
-		if err != nil {
+		conn := c.Connect()
+		if conn == nil {
+			err = errors.New("Could not make connection")
 			return
 		}
 	}
@@ -172,9 +175,10 @@ func (c *SSHClient) Cmd(cmd string, sn *SshSession, deadline *time.Time, idleTim
 
 func (c *SSHClient) Pipe(rw ReadWriteCloser, pty *PtyInfo, deadline *time.Time, idleTimeout int) (currentSession *SshSession, err error) {
 	if c.isConnected == false {
-		_, err := c.Connect()
-		if err != nil {
-			return nil, err
+		conn := c.Connect()
+		if conn == nil {
+			err = errors.New("Could not make connection")
+			return
 		}
 	}
 	currentSession, err = NewSession(c.remoteConn, deadline, idleTimeout)
