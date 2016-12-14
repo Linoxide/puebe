@@ -2,290 +2,267 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/Linoxide/puebe/server"
+	"github.com/toqueteos/webbrowser"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/scottkiss/gomagic/dbmagic"
 
 	"golang.org/x/crypto/ssh"
 )
 
-//TODO: Validate input dataManage invalid data input to ssh client
-//Variables to start ssh client
-var (
-	exitCode     bool
-	hostName     string
-	userName     string
-	passWord     string
-	fileName     string
-	dbname       string
-	dbuser       string
-	dbpass       string
-	dbquery      string
-	fileLocation string
-	bindaddr     string
-	remoteaddr   string
-	port         int
-)
+type rpcHandler struct {
+	workerNum uint
+	ops       chan operation // request channel
+	// reqChan chan
+	close    chan struct{}
+	mux      *http.ServeMux
+	handlers map[string]jobHandler
+}
 
-const bufferSize = 1024 * 4
 const maxThroughPut = 6553600
 
-var buf = make([]byte, bufferSize) //holds buffer variable
+type Config struct {
+	Address string
+	//gnet uses this for TCP incoming and outgoing
+	Port int
+	//max connections to maintain
+	
+	//AddressVersion string
+	// Remote web interface
+	WebInterface      bool
+	WebInterfacePort  int
+	WebInterfaceAddr  string
+	WebInterfaceUser  string
+	WebInterfacePass   string
+	WebInterfaceHTTPS bool
 
-//ssh server structure.
-type hostServer struct {
-	Host string
+	// Launch System Default Browser after client startup
+	LaunchBrowser bool
+
+	// If true, print the configured client web interface address and exit
+	PrintWebInterfaceAddress bool
+
+	// Data directory holds app data -- defaults to ~/.skycoin
+	DataDirectory string
+	// GUI directory contains assets for the html gui
+	GUIDirectory string
+	// This is the value registered with flag, it is converted to LogLevel after parsing
+	LogLevel logging.Level
+	logLevel string
+
+
+	// Will force it to connect to this ip:port, instead of waiting for it
+	// to show up as a peer
+	ConnectTo string
 }
 
-func (s *hostServer) Start() {
-	ln, err := net.Listen("tcp", s.Host)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer ln.Close()
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Println(err)
-		}
-		go handleConn(conn)
+func (c *Config) register() {
+	
+	flag.StringVar(&c.Address, "address", c.Address,
+		"IP Address to run application on. Leave empty to default to a public interface")
+	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
+	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface,
+		"enable the web interface")
+	flag.IntVar(&c.WebInterfacePort, "web-interface-port",
+		c.WebInterfacePort, "port to serve web interface on")
+	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr",
+		c.WebInterfaceAddr, "addr to serve web interface on")
+	flag.StringVar(&c.WebInterfaceUser, "web-interface-user-name",
+		c.WebInterfaceUser, "default user for web interface HTTPS. "+
+			"If not provided, will use User name in -data-directory")
+	flag.StringVar(&c.WebInterfacePass, "web-interface-key",
+		c.WebInterfacePass, "Password for web interface HTTPS. "+
+			"If not provided, will use key.pem in -data-directory")
+	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
+		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
+		"launch system default webbrowser at client startup")
+	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
+		c.PrintWebInterfaceAddress, "print configured web interface address and exit")
+	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
+		"directory to store app data (defaults to ~/.skycoin)")
+	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
+		"connect to this ip only")
+	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
+		"static content directory for the html gui")
+
+}
+
+
+var devConfig Config = Config{
+	
+	// Which address to serve on. Leave blank to automatically assign to a
+	// public interface
+	Address: "",
+	//gnet uses this for TCP incoming and outgoing
+	Port: 9000,
+
+	//AddressVersion: "test",
+	// Remote web interface
+	WebInterface:             true,
+	WebInterfacePort:         9000,
+	WebInterfaceAddr:         "127.0.0.1",
+	WebInterfaceUser:         "root",
+	WebInterfacePass:          "root",
+	WebInterfaceHTTPS:        false,
+	PrintWebInterfaceAddress: false,
+	LaunchBrowser:            true,
+	// Data directory holds app data -- defaults to ~/.puebe
+	DataDirectory: ".puebe",
+	// Web GUI static resources
+	GUIDirectory: "./src/gui/static/",
+	
+	ConnectTo: "",
+}
+
+func (c *Config) Parse() {
+	c.register()
+	flag.Parse()
+	c.postProcess()
+}
+
+func (c *Config) postProcess() {
+
+	c.DataDirectory = util.InitDataDir(c.DataDirectory)
+
+	if c.NodeDirectory == "" {
+		c.NodeDirectory = filepath.Join(c.DataDirectory, "nodes/")
 	}
 }
 
-func onMessageReceived(conn net.Conn) {
-	buffer := make([]byte, bufferSize)
-	for {
-		n, err := conn.Read(buffer)
-		if err == io.EOF {
-			fmt.Printf("The RemoteAddr: %s is closed!\n", conn.RemoteAddr().String())
-			return
-		}
-		if err != nil {
-			break
-		}
-		if n > 0 {
-			str := string(buffer[:n])
-			fmt.Printf("%s", str)
-			if strings.Contains(str, "logout") {
-				exitCode = true
-			}
+func configureDaemon(c *Config) SSHClient.SSHClientConfig {
+	
+	var dc SSHClientConfig
+	dc.dataDir = c.DataDirectory
+	dc.Port = c.Port
+	dc.Daemon.Port = c.Port
+	dc.Host = c.Address
+	dc.User = c.WebInterfaceUser
+	dc.Pass = c.WebInterfacePass 
+	
+	return dc
+}
+
+
+func Run(c *Config) {
+
+	scheme := "http"
+	if c.WebInterfaceHTTPS {
+		scheme = "https"
+	}
+	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
+	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	logger.Critical("Full address: %s", fullAddress)
+
+	if c.PrintWebInterfaceAddress {
+		fmt.Println(fullAddress)
+		return
+	}
+
+
+	// If the user Ctrl-C's, shutdown properly
+	quit := make(chan int)
+	go catchInterrupt(quit)
+	// Watch for SIGUSR1
+	go catchDebug()
+
+
+	dconf := configureDaemon(c)
+	node := server.NewSSHClient(dconf)
+	var err error
+	go node.Connect()
+	
+
+
+	if c.WebInterface {
+		var err error
+		if c.WebInterfaceHTTPS {
+
+			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, node, c.WebInterfaceUser, c.WebInterfacePass)
 		} else {
-			break
+			err = gui.LaunchWebInterface(c.Address, c.GUIDirectory, node)
+		}
+
+		if err != nil {
+			logger.Error(err.Error())
+			logger.Error("Failed to start web GUI")
+			os.Exit(1)
+		}
+
+		if c.LaunchBrowser {
+			go func() {
+				// Wait a moment just to make sure the http interface is up
+				time.Sleep(time.Millisecond * 100)
+
+				logger.Info("Launching System Browser with %s", fullAddress)
+				if err := OpenBrowser(fullAddress); err != nil {
+					logger.Error(err.Error())
+				}
+			}()
 		}
 	}
+
+	<-quit
+	stopDaemon <- 1
+	close(node.connect)
+
+	logger.Info("Shutting down")
+	logger.Info("Goodbye")
 }
 
-func handleConn(conn net.Conn) {
-	config := &server.SSHClientConfig{
-		User:     userName,
-		Password: passWord,
-		Host:     hostName,
-	}
-	sshclient := server.NewSSHClient(config)
-	_, err := sshclient.Connect()
-	if err == nil {
-		fmt.Println("SSH Connection success")
-	} else {
-		fmt.Println("SSH Connection failure")
-	}
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}
-	pty := &server.PtyInfo{
-		Term:  "xterm-256color",
-		H:     80,
-		W:     40,
-		Modes: modes,
-	}
-	session, err := sshclient.Pipe(conn, pty, nil, 30)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer session.Close()
+
+func OpenBrowser(url string) error {
+	return webbrowser.Open(url)
 }
 
 func main() {
 
-	var option string
-	help := "\nOPTIONS [sh ssh login] [-cp file transfer] [-pf ssh server forward] \n[-lf local port forward] [--help Help] [-q Quit]\n"
-
-	fmt.Printf("\nPUEBE SSH TOOL\n")
-
-	for true {
-
-		fmt.Printf("\nUsage: puebe [OPTION].")
-		fmt.Printf("\nOPTIONS [-sh ssh login] [-cp file transfer] [-pf ssh server forward] [-lf local port forward]")
-		fmt.Printf("\n --help [To view options] [-q Exit] \n\n")
-		fmt.Printf("\nEnter option: ")
-		_, er := fmt.Scanf("%s", &option)
-		if er != nil {
-			fmt.Println(er)
-		}
-
-		switch option {
-		case "sh":
-		case "-sh": //ssh login
-			sshLogin()
-			break
-
-		case "-cp":
-		case "cp": //ssh copy
-			sshCopy()
-			break
-
-		case "pf":
-		case "-pf": //ssh server forwarding
-			sshForward()
-			break
-
-		case "lf":
-		case "-lf": //ssh local port forwarding
-			fmt.Printf("\nEnter Host Name, DB name, DB password and Port")
-			_, err := fmt.Scanf("%s, %s, %s, %d", &hostName, &dbname, &dbpass, &port)
-			if err != nil {
-				fmt.Println(err)
-			}
-			dbWorker()
-			break
-
-		case "--help":
-		case "h":
-		case "-h":
-		case "H":
-		case "-H":
-		case "help":
-			fmt.Println(help)
-			break
-		case "q":
-		case "Q":
-		case "-q":
-		case "-Q":
-			os.Exit(1)
-			break
-		default:
-			fmt.Printf("\nInvalid option.\n")
-			break
-		}
-	} //end infinite loop
+	devConfig.Parse()
+	Run(&devConfig)
 }
 
-func sshForward() {
-	fmt.Printf("\nEnter Local BindAddress, Remote addr, ssh server addr, username, password")
-	_, err := fmt.Scanf("%s, %s, %s, %s, %s", &bindaddr, &remoteaddr, &hostName, &userName, &passWord)
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	srv := new(server.LocalForwardServer)
-	srv.LocalBindAddress = bindaddr
-	srv.RemoteAddress = remoteaddr
-	srv.SshServerAddress = hostName
-	srv.SshUserPassword = userName
-	srv.SshUserName = passWord
-	go srv.Start(dbWorker)
-	defer srv.Stop()
+func catchInterrupt(quit chan<- int) {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
+	<-sigchan
+	signal.Stop(sigchan)
+	quit <- 1
 }
 
-func sshCopy() {
-	fmt.Printf("\nEnter Host name, User name and Password: ")
-	_, err := fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("\nEnter File location, File name: ")
-	_, err = fmt.Scanf("%s, %s", &fileLocation, &fileName)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	config := &server.SSHClientConfig{
-		User:     userName,
-		Password: passWord,
-		Host:     hostName,
-	}
-	sshclient := server.NewSSHClient(config)
-	sshclient.MaxDataThroughput = maxThroughPut
-	stdout, stderr, erru := server.UploadFile(hostName, fileLocation, fileName)
-	if erru != nil {
-		log.Panicln(erru)
-	}
-
-	if stderr != "" {
-		log.Panicln(stderr)
-	}
-
-	log.Println("File sent" + stdout)
-	return
-}
-
-func sshLogin() {
-	fmt.Printf("\nEnter Host name, User name and Password: ")
-	_, er := fmt.Scanf("%s, %s, %s", &hostName, &userName, &passWord)
-	if er != nil {
-		fmt.Println(er)
-	}
-
-	server := &hostServer{
-		Host: hostName,
-	}
-
-	go server.Start()
-	time.Sleep(time.Second)
-	conn, err := net.Dial("tcp", ":8080")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer conn.Close()
-	fmt.Println("Connected to ssh server!")
-	go onMessageReceived(conn)
+// Catches SIGUSR1 and prints internal program state
+func catchDebug() {
+	sigchan := make(chan os.Signal, 1)
+	//signal.Notify(sigchan, syscall.SIGUSR1)
+	signal.Notify(sigchan, syscall.Signal(0xa)) // SIGUSR1 = Signal(0xa)
 	for {
-		if exitCode {
-			break
+		select {
+		case <-sigchan:
+			printProgramStatus()
 		}
-		inputReader := bufio.NewReader(os.Stdin)
-		input, erro := inputReader.ReadString('\n')
-		if erro != nil {
-			fmt.Println("Errors reading connection.")
-			return
-		}
-		b := []byte(input)
-		conn.Write(b)
 	}
-	return
 }
 
-func dbWorker() {
-
-	ds := new(dbmagic.DataSource)
-	ds.Charset = "utf8"
-	ds.Host = hostName
-	ds.Port = port
-	ds.DatabaseName = dbname
-	ds.User = dbuser
-	ds.Password = dbpass
-	dbm, erm := dbmagic.Open("mysql", ds)
-	if erm != nil {
-		log.Fatal(erm)
+func initLogging(level logging.Level, color bool) {
+	format := logging.MustStringFormatter(logFormat)
+	logging.SetFormatter(format)
+	for _, s := range logModules {
+		logging.SetLevel(level, s)
 	}
-
-	fmt.Printf("\nEnter Database query: ")
-	fmt.Scanf("%s", &dbquery)
-	results, errm := dbm.Db.Query(dbquery)
-	defer dbm.Db.Close()
-	if errm != nil {
-		log.Fatal(errm)
-	}
-
-	log.Println(results)
+	stdout := logging.NewLogBackend(os.Stdout, "", 0)
+	stdout.Color = color
+	logging.SetBackend(stdout)
 }
+
