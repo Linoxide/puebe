@@ -362,7 +362,7 @@ export class loadNodeComponent implements OnInit {
     
     
     //Add new node function for generate new node in Puebe
-    createNewNode(nodeName, userName, Password, address, Port){
+    createNewNode(nodeName, address, Port, userName, Password){
 
         //check if label is duplicated
         var old = _.find(this.nodes, function(o){
@@ -386,46 +386,8 @@ export class loadNodeComponent implements OnInit {
                 response => {
                   console.log(response)
 
-                  
-
-                    async.map(repeats, (idx, callback) => {
-                        var stringConvert = 'id='+response.meta.address+response.meta.Port;
-                        this.http.post('/node/newAddress', stringConvert, {headers: headers})
-                            .map((res:Response) => res.json())
-                            .subscribe(
-                                response => {
-                                  console.log(response)
-                                  callback(null, null)
-                                },
-                                err => {
-                                  callback(err, null)
-                                },
-                                () => {}
-                            );
-                    }, (err, ret) => {
-                      if(err) {
-                        console.log(err);
-                        return;
-                      }
-
-                      //Hide new node popup
-                      this.NewNodeIsVisible = false;
-                      alert("New node created successfully");
-                      //Load node for refresh list
-                      this.loadNode()
-                  } else {
-                    //Hide new node popup
-                    this.NewNodeIsVisible = false;
-                    alert("New node created successfully");
-                    //Load node for refresh list
-                    this.loadNode();
-                  }
-                },
-                err => {
-                  console.log(err);
-                },
-                () => {}
-            );
+      
+            
     }
 
     //Edit existing node function

@@ -7,7 +7,7 @@ echo "Puebe GUI :" "$DIR"
 pushd "$DIR" >/dev/null
 
 echo "Installing GUI Deps"
-npm install
+#npm install gulp
 
 echo "Building GUI"
 gulp build
