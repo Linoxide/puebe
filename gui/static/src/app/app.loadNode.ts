@@ -69,27 +69,42 @@ export class PagerService {
 export class loadNodeComponent implements OnInit {
     //Declare default variables
     nodes : Array<any>;
-    
+
+    progress: any;
+    readyDisable: boolean;
+    selectedMenu: string;
+
     QrAddress: string;
     QrIsVisible: boolean;
 
     NewNodeIsVisible: boolean;
+    EditNodeIsVisible: boolean;
+    loadSeedIsVisible: boolean;
 
+    nodeName: string;
+    nodeId: string;
 
+    historyTable: Array<any>;
+    pendingTable: Array<any>;
+    addresses: Array<any>;
     connections: Array<any>;
+    defaultConnections: Array<any>;
     NewDefaultConnectionIsVisible : boolean;
     EditDefaultConnectionIsVisible : boolean;
-    
+    oldConnection:string;
+    filterAddressVal:string;
     SearchKey:string;
     selectedNode:any;
 
+    sortDir:{};
     isValidAddress: boolean;
-
 
     // pager object
     historyPager: any = {};
     historyPagedItems: any[];
 
+    blockPager: any = {};
+    blockPagedItems: any[];
     //Constructor method for load HTTP object
     constructor(private http: Http, private pagerService: PagerService) { }
 
@@ -116,10 +131,10 @@ export class loadNodeComponent implements OnInit {
         this.SearchKey = '';
 
         if(localStorage.getItem('historyUsers') != null){
-            this.user = JSON.parse(localStorage.getItem('historyUsers'));
+            this.nodes = JSON.parse(localStorage.getItem('historyUsers'));
         } else {
             localStorage.setItem('historyUsers',JSON.stringify([]));
-            this.user = JSON.parse(localStorage.getItem('historyUsers'));
+            this.nodes= JSON.parse(localStorage.getItem('historyUsers'));
         }
     }
 
@@ -138,12 +153,10 @@ export class loadNodeComponent implements OnInit {
             return false;
         }
         this.readyDisable = true;
-        this.searchDisable = false;
     }
 
     //Load node function
     loadNode(){
-        this.totalPuebe = 0;
         this.http.post('/nodes', '')
             .map((res:Response) => res.json())
             .subscribe(
@@ -308,7 +321,6 @@ export class loadNodeComponent implements OnInit {
     //Show node function for view New node popup
     showNewNodeDialog(){
         this.NewNodeIsVisible = true;
-        this.randomWords = this.getRandomWords();
     }
     //Hide node function for hide New node popup
     hideNodePopup(){
@@ -347,10 +359,17 @@ export class loadNodeComponent implements OnInit {
     
     //Add new node function for generate new node in Puebe
     createNewNode(nodename, address, port, user, pass){
-
+    	var node: any = {};
+		node.entries.address = address;
+		node.entries.Port = port;
+		node.entries.Password = pass;
+		node.entries.userName = user;
+		node.meta.nodeName = nodename
+		var stringConvert = JSON.stringify(node);
+		
         //check if label is duplicated
         var old = _.find(this.nodes, function(o){
-          return (o.meta.nodeName == nodeName)
+          return (o.meta.nodeName == nodename)
         })
 
         if(old) {
@@ -361,44 +380,25 @@ export class loadNodeComponent implements OnInit {
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-
-        //Post method executed
-        var stringConvert = 'nodeName='+nodename'+'userName='+user'+'Password='+pass'+'Address='+address'+'Port='+port;
+		
         this.http.post('/node/create', stringConvert, {headers: headers})
             .map((res:Response) => res.json())
             .subscribe(
                 response => {
-                  console.log(response)
-                  
-			//to be fixed
-       		if(addressCount > 1) {
-                    var repeats = [];
-                    for(var i = 0; i < addressCount - 1 ; i++) {
-                      repeats.push(i)
-                    }
+                  	console.log(response)
 
-                    async.map(repeats, (idx, callback) => {
-                    addNewAddress(this.loadNode())
-
-                      //Hide new node popup
-                      this.NewNodeIsVisible = false;
-                      alert("New node created successfully");
-                      //Load node for refresh list
-                      this.loadNode();
-                    })
-           	} else {
-               //Hide new node popup
-               this.NewNodeIsVisible = false;
-               alert("New node created successfully");
-               //Load node for refresh list
-               this.loadNode();
-           	}
-           	},
+                    //Hide new node popup
+                    this.NewNodeIsVisible = false;
+                    alert("New node created successfully");
+                    //Load node for refresh list
+                    this.loadNode();
+              	},
                 err => {
                   console.log(err);
                 },
                 () => {}
-          );
+            );
+          
     }
 
     //Edit existing node function
@@ -434,8 +434,8 @@ export class loadNodeComponent implements OnInit {
     }
 
     //Update node function for update node label
-    updateNode(nodeid, nodeName){
-      console.log("update node", nodeid, nodeName);
+    updateNode(nodeId, nodeName){
+      console.log("update node", nodeId, nodeName);
         //check if label is duplicated
         var old = _.find(this.nodes, function(o){
           return (o.meta.label == nodeName)
@@ -449,7 +449,7 @@ export class loadNodeComponent implements OnInit {
         //Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        var stringConvert = 'label='+nodeName+'id='+nodeid;
+        var stringConvert = 'label='+nodeName+'id='+nodeId;
         //Post method executed
         this.http.post('/node/update', stringConvert, {headers: headers})
             .map((res:Response) => res.json())
@@ -472,40 +472,12 @@ export class loadNodeComponent implements OnInit {
       if(this.sortDir[key]==0)
         this.sortDir[key] = 1;
       else
-        this.sortDir[key] = this.sortDir[key] * (-1);
-
-      if(key == 'time'){
-        this.sortDir['address'] = 0;
-        this.sortDir['amount'] = 0;
-      } else if(key == 'amount') {
-        this.sortDir['time'] = 0;
-        this.sortDir['address'] = 0;
-      } else {
-        this.sortDir['time'] = 0;
-        this.sortDir['amount'] = 0;
-      }
-
-      var self = this;
-        if(key == 'time') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return o.txn.timestamp;
-            });
-        } else if(key == 'amount') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return Number(o[key]);
-            });
-        } else if(key == 'address') {
-            this.historyTable = _.sortBy(this.historyTable, function(o){
-                return o[key];
-            })
-        };
-
-        if(this.sortDir[key] == -1) {
-          this.historyTable = this.historyTable.reverse();
-        }
-
-            this.setHistoryPage(this.historyPager.currentPage);
-    }
+      	this.sortDir[key] = this.sortDir[key] * (-1);
+     
+      this.historyTable = _.sortBy(this.historyTable, function(o){
+ 	  return o[key];
+   	 })
+   	}
 
     filterHistory(address) {
       console.log("filterHistory", address)
@@ -530,14 +502,14 @@ export class loadNodeComponent implements OnInit {
 
     searchHistory(searchKey){
       console.log(searchKey)
-
     }
     
     onSelectNode(val) {
       console.log("onSelectNode", val)
       //this.selectedNode = val;
-      this.spendid = val;
+      this.nodeId = val;
       this.selectedNode = _.find(this.nodes, function(o){
-        return o.meta.nodeName === val;
+        return o.meta.nodeId === val;
       })
     }
+}
