@@ -27,7 +27,7 @@ var (
 
 type SSHClient struct {
 	SSHClientConfig
-	remoteConn  *ssh.Client
+	RemoteConn  *ssh.Client
 	IsConnected bool
 }
 
@@ -62,7 +62,7 @@ func (c *SSHClient) maxThroughputControl() {
 }
 
 func (c *SSHClient) Connect() (conn *ssh.Client) {
-	if c.remoteConn != nil {
+	if c.RemoteConn != nil {
 		return
 	}
 	port := "22"
@@ -92,7 +92,7 @@ func (c *SSHClient) Connect() (conn *ssh.Client) {
 		}
 	}
 	log.Println("dial ssh success")
-	c.remoteConn = conn
+	c.RemoteConn = conn
 	return
 }
 
@@ -106,7 +106,7 @@ func (c *SSHClient) TransferData(target string, data []byte) (stdout, stderr str
 			return
 		}
 	}
-	currentSession, err := NewSession(c.remoteConn, nil, 0)
+	currentSession, err := NewSession(c.RemoteConn, nil, 0)
 	if err != nil {
 		return
 	}
@@ -154,7 +154,7 @@ func (c *SSHClient) Cmd(cmd string, sn *SshSession, deadline *time.Time, idleTim
 		}
 	}
 	if sn == nil {
-		currentSession, err = NewSession(c.remoteConn, deadline, idleTimeout)
+		currentSession, err = NewSession(c.RemoteConn, deadline, idleTimeout)
 	} else {
 		currentSession = sn
 		currentSession.SetDeadline(deadline)
@@ -181,7 +181,7 @@ func (c *SSHClient) Pipe(rw ReadWriteCloser, pty *PtyInfo, deadline *time.Time, 
 			return
 		}
 	}
-	currentSession, err = NewSession(c.remoteConn, deadline, idleTimeout)
+	currentSession, err = NewSession(c.RemoteConn, deadline, idleTimeout)
 	if err != nil {
 		return
 	}
