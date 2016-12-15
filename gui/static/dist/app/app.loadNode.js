@@ -11,7 +11,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
     var core_1, router_1, http_1, http_2, ng2_qrcode_ts_1;
-    var PagerService, loadNodeComponent, self;
+    var PagerService, loadNodeComponent;
     return {
         setters:[
             function (core_1_1) {
@@ -82,6 +82,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.pagerService = pagerService;
                     // pager object
                     this.historyPager = {};
+                    this.blockPager = {};
                 }
                 //Init function for load default value
                 ngOnInit() {
@@ -89,7 +90,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.loadDefaultConnections();
                     this.loadNode();
                     this.selectedNode = {};
-                    this.loadOutputs();
                     this.isValidAddress = false;
                     //Set interval function for loading nodes every 15 seconds
                     setInterval(() => {
@@ -102,11 +102,11 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.filterAddressVal = '';
                     this.SearchKey = '';
                     if (localStorage.getItem('historyUsers') != null) {
-                        this.user = JSON.parse(localStorage.getItem('historyUsers'));
+                        this.nodes = JSON.parse(localStorage.getItem('historyUsers'));
                     }
                     else {
                         localStorage.setItem('historyUsers', JSON.stringify([]));
-                        this.user = JSON.parse(localStorage.getItem('historyUsers'));
+                        this.nodes = JSON.parse(localStorage.getItem('historyUsers'));
                     }
                 }
                 //Search button for searching through the nodes
@@ -124,11 +124,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         return false;
                     }
                     this.readyDisable = true;
-                    this.searchDisable = false;
                 }
                 //Load node function
                 loadNode() {
-                    this.totalPuebe = 0;
                     this.http.post('/nodes', '')
                         .map((res) => res.json())
                         .subscribe(data => {
@@ -138,13 +136,17 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                             });
                             this.nodes = data;
                             if (this.nodes.length > 0) {
-                                this.onSelectNode(this.nodes[0].meta.nodeName);
+                                this.onSelectNode(this.nodes[0].meta.nodeId);
                             }
                         }
                         else {
                             data.map((w) => {
                                 var old = _.find(this.nodes, (o) => {
-                                    return o.meta.nodeName === w.meta.nodeName;
+                                    o.meta.nodeType == w.meta.nodeType;
+                                    o.meta.nodeName == w.meta.nodeName;
+                                    o.meta.nodeZone == w.meta.nodeZone;
+                                    o.meta.nodeId == w.meta.nodeId;
+                                    return o.meta.nodeId;
                                 });
                                 if (old) {
                                     _.extend(old, w);
@@ -160,9 +162,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         var inc;
                         for (var item in data) {
                             var name = data[inc].meta.nodeName;
-                            var id = data[inc].meta.instanceid;
-                            var type = data[inc].meta.instancetype;
-                            var zone = data[inc].meta.instancezone;
+                            var id = data[inc].meta.nodeId;
+                            var type = data[inc].meta.nodeType;
+                            var zone = data[inc].meta.nodezone;
                             this.loadNodeItem(name, id, type, zone, inc);
                             inc;
                         }
@@ -189,32 +191,31 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         });
                     }
                 }
-                loadNodeItem(address, inc) {
+                loadNodeItem(name, id, type, zone, inc) {
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.get('/node/connections?id=' + address, { headers: headers })
+                    this.http.get('/node/?id=' + id, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(
                     //Response from API
                     response => {
                         //console.log('load done: ' + inc, response);
-                        this.nodes[inc].balance = response.confirmed.coins / 1000000;
-                        this.totalPuebe += 1;
-                    }, err => console.log("Error on load balance: " + err), () => {
-                        //console.log('Balance load done')
+                        this.nodes[inc].connection = response.confirmed.connection;
+                    }, err => console.log("Error on adding new node " + err), () => {
+                        //console.log('New node added.')
                     });
-                    //get address balances
+                    //get connection addresses
                     this.nodes[inc].entries.map((entry) => {
-                        this.http.get('/balance?addrs=' + entry.address, { headers: headers })
+                        this.http.get('/node?address=' + entry.address, { headers: headers })
                             .map((res) => res.json())
                             .subscribe(
                         //Response from API
                         response => {
-                            //console.log('balance:' + entry.address, response);
-                            entry.balance = response.confirmed.coins / 1000000;
-                        }, err => console.log("Error on load balance: " + err), () => {
-                            //console.log('Balance load done')
+                            //console.log('Address:' + entry.address, response);
+                            entry.connection = response.confirmed.connection;
+                        }, err => console.log("Error on loading connection address: " + err), () => {
+                            //console.log('connection address loaded')
                         });
                     });
                 }
@@ -229,26 +230,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     });
                 }
                 loadDefaultConnections() {
-                    this.http.post('/node/defaultConnections', '')
+                    this.http.post('/node/connections', '')
                         .map((res) => res.json())
                         .subscribe(data => {
                         //console.log("default connections", data);
                         this.defaultConnections = data;
-                    }, err => console.log("Error on load default connection: " + err), () => {
-                        //console.log('Default connections load done')
-                    });
-                }
-                loadOutputs() {
-                    var headers = new http_2.Headers();
-                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.get('/outputs', { headers: headers })
-                        .map((res) => res.json())
-                        .subscribe(data => {
-                        this.outputs = _.sortBy(data, function (o) {
-                            return o.address;
-                        });
-                    }, err => console.log("Error on load outputs: " + err), () => {
-                        //console.log('Connection load done')
+                    }, err => console.log("Error on loading default connection: " + err), () => {
+                        //console.log('Default connections loaded')
                     });
                 }
                 //Load progress function for Puebe
@@ -273,7 +261,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Show QR code function for show QR popup
                 showQR(node) {
-                    this.QrAddress = node.entries[0].address;
+                    this.QrAddress = node.meta[0].nodeId;
                     this.QrIsVisible = true;
                 }
                 //Hide QR code function for hide QR popup
@@ -283,7 +271,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 //Show node function for view New node popup
                 showNewNodeDialog() {
                     this.NewNodeIsVisible = true;
-                    this.randomWords = this.getRandomWords();
                 }
                 //Hide node function for hide New node popup
                 hideNodePopup() {
@@ -319,10 +306,17 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.defaultConnections.splice(idx, 1);
                 }
                 //Add new node function for generate new node in Puebe
-                createNewNode(nodeName, address, Port, userName, Password) {
+                createNewNode(nodename, address, port, user, pass) {
+                    var node = {};
+                    node.entries.address = address;
+                    node.entries.Port = port;
+                    node.entries.Password = pass;
+                    node.entries.userName = user;
+                    node.meta.nodeName = nodename;
+                    var stringConvert = JSON.stringify(node);
                     //check if label is duplicated
                     var old = _.find(this.nodes, function (o) {
-                        return (o.meta.nodeName == nodeName);
+                        return (o.meta.nodeName == nodename);
                     });
                     if (old) {
                         alert("This node label is used already");
@@ -331,68 +325,108 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    //Post method executed
-                    var stringConvert = 'userName=' + userNameName + '&Password=' + Password;
                     this.http.post('/node/create', stringConvert, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(response => {
                         console.log(response);
-                    }, 
-                    //Edit existing node function
-                    editNode(node), {
-                        this: .EditNodeIsVisible = true,
-                        this: .nodeId = node.meta.nodeName
-                    }, addNewAddress(node), {
-                        //Set http headers
-                        var: headers = new http_2.Headers(),
-                        headers: .append('Content-Type', 'application/x-www-form-urlencoded'),
-                        //Post method executed
-                        var: stringConvert = 'id=' + node.meta.address + node.meta.Port,
-                        this: .http.post('/node/newAddress', stringConvert, { headers: headers })
-                            .map((res) => res.json())
-                            .subscribe(response => {
-                            console.log(response);
-                            alert("New address created successfully");
-                            //Load node for refresh list
-                            this.loadNode();
-                        }, err => {
-                            console.log(err);
-                        }, () => { })
-                    }, 
-                    //Hide edit node function
-                    hideEditNodePopup(), {
-                        this: .EditNodeIsVisible = false
-                    }, 
-                    //Update node function for update node label
-                    updateNode(nodeid, nodeName), {
-                        console: .log("update node", nodeid, nodeName),
-                        //check if label is duplicated
-                        var: old = _.find(this.nodes, function (o) {
-                            return (o.meta.label == nodeName);
-                        }),
-                        if(old) {
-                            alert("This node label is used already");
-                            return;
-                        },
-                        //Set http headers
-                        var: headers = new http_2.Headers(),
-                        headers: .append('Content-Type', 'application/x-www-form-urlencoded'),
-                        var: stringConvert = 'label=' + nodeName + '&id=' + nodeid,
-                        //Post method executed
-                        this: .http.post('/node/update', stringConvert, { headers: headers })
-                            .map((res) => res.json())
-                            .subscribe(response => {
-                            //Hide new node popup
-                            this.EditNodeIsVisible = false;
-                            alert("Node updated successfully");
-                            //Load node for refresh list
-                            this.loadNode();
-                        }, err => console.log("Error on update node: " + JSON.stringify(err)), () => {
-                            //console.log('Update node done')
-                        })
-                    }, sortHistory(key), {
-                        if() { }, this: .sortDir[key] == 0 });
-                    this.sortDir[key] = 1;
+                        //Hide new node popup
+                        this.NewNodeIsVisible = false;
+                        alert("New node created successfully");
+                        //Load node for refresh list
+                        this.loadNode();
+                    }, err => {
+                        console.log(err);
+                    }, () => { });
+                }
+                //Edit existing node function
+                editNode(node) {
+                    this.EditNodeIsVisible = true;
+                    this.nodeId = node.meta.nodeName;
+                }
+                addNewAddress(node) {
+                    //Set http headers
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    //Post method executed
+                    var stringConvert = 'id=' + node.meta.address + node.meta.Port;
+                    this.http.post('/node/newAddress', stringConvert, { headers: headers })
+                        .map((res) => res.json())
+                        .subscribe(response => {
+                        console.log(response);
+                        alert("New address created successfully");
+                        //Load node for refresh list
+                        this.loadNode();
+                    }, err => {
+                        console.log(err);
+                    }, () => { });
+                }
+                //Hide edit node function
+                hideEditNodePopup() {
+                    this.EditNodeIsVisible = false;
+                }
+                //Update node function for update node label
+                updateNode(nodeId, nodeName) {
+                    console.log("update node", nodeId, nodeName);
+                    //check if label is duplicated
+                    var old = _.find(this.nodes, function (o) {
+                        return (o.meta.label == nodeName);
+                    });
+                    if (old) {
+                        alert("This node label is used already");
+                        return;
+                    }
+                    //Set http headers
+                    var headers = new http_2.Headers();
+                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
+                    var stringConvert = 'label=' + nodeName + 'id=' + nodeId;
+                    //Post method executed
+                    this.http.post('/node/update', stringConvert, { headers: headers })
+                        .map((res) => res.json())
+                        .subscribe(response => {
+                        //Hide new node popup
+                        this.EditNodeIsVisible = false;
+                        alert("Node updated successfully");
+                        //Load node for refresh list
+                        this.loadNode();
+                    }, err => console.log("Error on update node: " + JSON.stringify(err)), () => {
+                        //console.log('Update node done')
+                    });
+                }
+                sortHistory(key) {
+                    if (this.sortDir[key] == 0)
+                        this.sortDir[key] = 1;
+                    else
+                        this.sortDir[key] = this.sortDir[key] * (-1);
+                    this.historyTable = _.sortBy(this.historyTable, function (o) {
+                        return o[key];
+                    });
+                }
+                filterHistory(address) {
+                    console.log("filterHistory", address);
+                    this.filterAddressVal = address;
+                }
+                setHistoryPage(page) {
+                    this.historyPager.totalPages = this.historyTable.length;
+                    if (page < 1 || page > this.historyPager.totalPages) {
+                        return;
+                    }
+                    // get pager object from service
+                    this.historyPager = this.pagerService.getPager(this.historyTable.length, page);
+                    console.log("this.historyPager", this.historyPager);
+                    // get current page of items
+                    this.historyPagedItems = this.historyTable.slice(this.historyPager.startIndex, this.historyPager.endIndex + 1);
+                    //console.log('this.pagedItems', this.historyTable, this.pagedItems);
+                }
+                searchHistory(searchKey) {
+                    console.log(searchKey);
+                }
+                onSelectNode(val) {
+                    console.log("onSelectNode", val);
+                    //this.selectedNode = val;
+                    this.nodeId = val;
+                    this.selectedNode = _.find(this.nodes, function (o) {
+                        return o.meta.nodeId === val;
+                    });
                 }
             };
             loadNodeComponent = __decorate([
@@ -405,70 +439,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 __metadata('design:paramtypes', [http_1.Http, PagerService])
             ], loadNodeComponent);
             exports_1("loadNodeComponent", loadNodeComponent);
-            this.sortDir[key] = this.sortDir[key] * (-1);
-            if (key == 'time') {
-                this.sortDir['address'] = 0;
-                this.sortDir['amount'] = 0;
-            }
-            else if (key == 'amount') {
-                this.sortDir['time'] = 0;
-                this.sortDir['address'] = 0;
-            }
-            else {
-                this.sortDir['time'] = 0;
-                this.sortDir['amount'] = 0;
-            }
-            self = this;
-            if (key == 'time') {
-                this.historyTable = _.sortBy(this.historyTable, function (o) {
-                    return o.txn.timestamp;
-                });
-            }
-            else if (key == 'amount') {
-                this.historyTable = _.sortBy(this.historyTable, function (o) {
-                    return Number(o[key]);
-                });
-            }
-            else if (key == 'address') {
-                this.historyTable = _.sortBy(this.historyTable, function (o) {
-                    return o[key];
-                });
-            }
-            ;
-            if (this.sortDir[key] == -1) {
-                this.historyTable = this.historyTable.reverse();
-            }
-            this.setHistoryPage(this.historyPager.currentPage);
-            filterHistory(address);
-            {
-                console.log("filterHistory", address);
-                this.filterAddressVal = address;
-            }
-            setHistoryPage(page, number);
-            {
-                this.historyPager.totalPages = this.historyTable.length;
-                if (page < 1 || page > this.historyPager.totalPages) {
-                    return;
-                }
-                // get pager object from service
-                this.historyPager = this.pagerService.getPager(this.historyTable.length, page);
-                console.log("this.historyPager", this.historyPager);
-                // get current page of items
-                this.historyPagedItems = this.historyTable.slice(this.historyPager.startIndex, this.historyPager.endIndex + 1);
-            }
-            searchHistory(searchKey);
-            {
-                console.log(searchKey);
-            }
-            onSelectNode(val);
-            {
-                console.log("onSelectNode", val);
-                //this.selectedNode = val;
-                this.spendid = val;
-                this.selectedNode = _.find(this.nodes, function (o) {
-                    return o.meta.nodeName === val;
-                });
-            }
         }
     }
 });
