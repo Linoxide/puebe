@@ -23,8 +23,6 @@ import (
 //nodes
 const NodeExt = "nde"
 
-type Nodes map[string]*Node
-
 type Node struct {
 	Meta        MetaData          `json:"meta"`
 	Entries     KeyEntry        `json:"entries"`
@@ -82,7 +80,7 @@ func LoadNodes(dir string) (Nodes, error) {
 
 	//
 	nodes := make(Nodes, 0)
-	for i, e := range entries {
+	for _, e := range entries {
 		if e.Mode().IsRegular() {
 			name := e.Name()
 			if !strings.HasSuffix(name, NodeExt) {
@@ -99,7 +97,7 @@ func LoadNodes(dir string) (Nodes, error) {
 				return nil, err
 			}
 			logger.Info("Loaded node from %s", fullpath)
-			nodes[name] = w
+			nodes[0] = *w
 		}
 	}
 	return nodes, nil
@@ -118,7 +116,7 @@ func apiCreateAddressHandler(gateway *server.SSHClient) http.HandlerFunc {
 		}
 
 		node := new(Node)
-		seedvalue, err := strconv.Atoi(seed)
+		seedvalue, _ := strconv.Atoi(seed)
 		rand.Seed(int64(seedvalue))
 		node.Meta.nodeId = rand.Int()
 		SendOr404(w, node)

@@ -16,6 +16,7 @@ import (
 
 	"github.com/Linoxide/puebe/server"
 )
+type Nodes []Node
 
 type NodeRPC struct {
 	Nodes         []Node
@@ -23,7 +24,7 @@ type NodeRPC struct {
 }
 
 //use a global for now
-var Wg *NodeRPC
+var Nd *NodeRPC
 
 const NodeTimestampFormat = "2016_12_14"
 
@@ -69,8 +70,8 @@ func (self *Node) Load(filename string) error {
 }
 
 // Add add node
-func (nodes Nodes) Add(w Node) error {
-	for node := range nodes {
+func Add(nodes Nodes, w Node) error {
+	for _, node := range nodes {
 		if node.Meta.nodeId == w.Meta.nodeId {
 			return errors.New("Nodes.Add, Node name would conflict with existing node, renaming")
 		}
@@ -86,9 +87,10 @@ func (nodes Nodes) Add(w Node) error {
 	return nil
 }
 
-func (nodes Nodes) Get(nodeId string) (Node, bool) {
-	for node := range nodes {
-		if node.Meta.nodeId == nodeId {
+func Get(nodes Nodes, nodeId string) (Node, bool) {
+	for _, node := range nodes {
+		id, _ := strconv.Atoi(nodeId)
+		if node.Meta.nodeId == id {
 			return node, true
 		}
 	}	
@@ -98,11 +100,11 @@ func (nodes Nodes) Get(nodeId string) (Node, bool) {
 
 //check for name conflicts!
 //resolve conflicts for saving nodes who have different names
-func (nodes Nodes) Save(dir string) []error {
+func Save(nodes Nodes, dir string) []error {
 	errs := make([]error, 0)
-	for w := range nodes {
-		if err := w.Save(dir); err != nil {
-			errs[id] = err
+	for i, w := range nodes {
+		if err := SaveJSON(dir, w,0600); err != nil {
+			errs[i] = err
 		}
 	}
 	if len(errs) == 0 {
@@ -112,7 +114,7 @@ func (nodes Nodes) Save(dir string) []error {
 }
 
 func InitNodeRPC(nodeDir string) {
-	Wg = NewNodeRPC(nodeDir)
+	Nd = NewNodeRPC(nodeDir)
 }
 
 func NewNodeRPC(nodeDir string) *NodeRPC {
@@ -128,11 +130,10 @@ func NewNodeRPC(nodeDir string) *NodeRPC {
 	if err != nil {
 		log.Panicf("Failed to load all nodes: %v", err)
 	}
-	rpc.Nodes[0] = w
 
-	if len(rpc.Nodes) == 0 {
+	if len(w) == 0 {
 		nodeName := NewNodeFilename()
-		rpc.CreateNode(rpc.Nodes[0].Entries.userName, rpc.Nodes[0].Entries.Password, rpc.Nodes[0].Entries.Address, rpc.Nodes[0].Entries.Port, nodeName)
+		rpc.CreateNode(w[0].Entries.userName, w[0].Entries.Password, w[0].Entries.Address, w[0].Entries.Port, nodeName)
 		if err := rpc.SaveNode(nodeName); err != nil {
 			log.Panicf("Failed to save nodes to %s: %v", rpc.NodeDirectory, err)
 		}
@@ -151,14 +152,14 @@ func (self *NodeRPC) ReloadNodes() error {
 }
 
 func (self *NodeRPC) SaveNode(nodeID string) error {
-	if ok := self.Get(nodeID); ok {
+	if _,ok := Get(self.Nodes, nodeID); ok {
 		return SaveJSON(self.NodeDirectory, self.Nodes, 0600)
 	}
 	return fmt.Errorf("Unable to save node %s", nodeID)
 }
 
-func (self *NodeRPC) SaveNodes() map[string]error {
-	return self.Nodes[0].Save(self.NodeDirectory)
+func (self *NodeRPC) SaveNodes() []error {
+	return Save(self.Nodes, self.NodeDirectory)
 }
 
 func (self *NodeRPC) CreateNode(user string, pass string, host string, port int, label string) (Node, error) {
@@ -174,27 +175,25 @@ func (self *NodeRPC) CreateNode(user string, pass string, host string, port int,
 	node.Nodes[0].Entries.userName = user
 	node.Nodes[0].Entries.Password = pass
 	nodeCreate(node.Nodes[0].connection)
+	
+	nde := Node{}
+	nde = node.Nodes[0]
 
-	_, err := node.Nodes[0].connection.Connect()
-	if err != nil {
-		node.Nodes[0].isConnected = false
-		return node.Node{}, err
-	} else {
-
-		e := Add(node)
-		if e != nil {
-			return node.Node{}, e
-		}
+	conn := nde.connection.Connect()
+	if conn == nil {
+		err := errors.New("Could not create connection")
+		nde.isConnected = false
+		return nde, err
 	}
 
-	return node.Nodes, nil
+	return nde, nil
 }
 
-func (self *NodeRPC) GetNode(nodeID string) *NodeRPC {
-	if w, ok := Get(nodeID); ok {
-		return &w
+func (self *NodeRPC) GetNode(nodeID string) Node {
+	if w, ok := Get(self.Nodes, nodeID); ok {
+		return w
 	}
-	return nil
+	return Node{}
 }
 
 // Create a node Name is set by creation date
@@ -206,60 +205,29 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 		host := r.FormValue("Address")
 		port := r.FormValue("Port")
 		label := r.FormValue("nodeName")
-		nodeName := label
-		var node node.Nodes
+
+		var node Node
 		var err error
 		// the node name may dup, rename it till no conflict.
 		for {
-			node, err = Wg.CreateNode(user, pass, host, port, label)
+			p, _ := strconv.Atoi(port)
+			node, err = Nd.CreateNode(user, pass, host,p, label)
 			if err != nil && strings.Contains(err.Error(), "renaming") {
-				nodeName = label
 				continue
 			}
 			break
 		}
-
-		if err := Wg.SaveNode(node.GetID()); err != nil {
+		id := strconv.Itoa(node.Meta.nodeId)
+		if err := Nd.SaveNode(id); err != nil {
 			Error400(w, err.Error())
 			return
 		}
 
-		rlt := node.NewNode(node)
+		rlt := node
 		SendOr500(w, rlt)
 	}
 }
 
-func nodeNewAddresses(gateway *server.SSHClient) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			Error405(w, "")
-			return
-		}
-
-		nodeID := r.FormValue("id")
-		if nodeID == "" {
-			Error400(w, "node id not set")
-			return
-		}
-
-		seedvalue, err := strconv.Atoi(nodeId)
-		rand.Seed(int64(seedvalue))
-		addrs := rand.Int()
-
-		if err := Wg.SaveNode(nodeId); err != nil {
-			Error500(w, "")
-			return
-		}
-
-		var rlt = struct {
-			Address string `json:"address"`
-		}{
-			addrs,
-		}
-		SendOr404(w, rlt)
-		return
-	}
-}
 
 // Update node label
 func nodeUpdateHandler(gateway *server.SSHClient) http.HandlerFunc {
@@ -277,14 +245,15 @@ func nodeUpdateHandler(gateway *server.SSHClient) http.HandlerFunc {
 			return
 		}
 
-		node := Wg.GetNode(id)
-		if node == nil {
+		node := Nd.GetNode(id)
+		if node.Meta.nodeId == 0 {
 			Error404(w, fmt.Sprintf("node of id: %v does not exist", id))
 			return
 		}
 
-		node.SetLabel(label)
-		if err := Wg.SaveNode(node.GetID()); err != nil {
+		node.Meta.nodeName = label
+		id = strconv.Itoa(node.Meta.nodeId)
+		if err := Nd.SaveNode(id); err != nil {
 			m := "Failed to save node: %v"
 			logger.Critical(m, "Failed to update label of node %v", id)
 			Error500(w, "Update node failed")
@@ -299,7 +268,7 @@ func nodeUpdateHandler(gateway *server.SSHClient) http.HandlerFunc {
 func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			ret := Wg.GetNode(r.FormValue("id"))
+			ret := Nd.GetNode(r.FormValue("id"))
 			SendOr404(w, ret)
 		}
 	}
@@ -308,8 +277,8 @@ func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
 // Returns all loaded nodes
 func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//ret := node.Nodes[0].ToPublicReadable()
-		ret := Wg.GetNodesReadable()
+	
+		ret := Nd.ReloadNodes()
 		SendOr404(w, ret)
 	}
 }
@@ -317,11 +286,11 @@ func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 // Saves all loaded nodes
 func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errs := Wg.SaveNodes() // (map[string]error)
+		errs := Nd.SaveNodes() 
 		if len(errs) != 0 {
 			err := ""
-			for id, e := range errs {
-				err += id + ": " + e.Error()
+			for _, e := range errs {
+				err += e.Error()
 			}
 			Error500(w, err)
 		}
@@ -331,7 +300,7 @@ func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
 // Loads/unloads nodes from the node directory
 func nodesReloadHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := Wg.ReloadNodes()
+		err := Nd.ReloadNodes()
 		if err != nil {
 			Error500(w, err.(error).Error())
 		}
@@ -350,8 +319,6 @@ func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	//		seed [optional]
 	//create new node
 	mux.HandleFunc("/node/create", nodeCreate(gateway))
-
-	mux.HandleFunc("/node/newAddress", nodeNewAddresses(gateway))
 
 	// Returns all loaded nodes
 	mux.HandleFunc("/node", nodesHandler(gateway))
