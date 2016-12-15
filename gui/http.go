@@ -29,7 +29,7 @@ func LaunchWebInterface(host, staticDir string, daemon *server.SSHClient) error 
 	logger.Warning("HTTPS not in use!")
 	logger.Info("Web resources directory: %s", staticDir)
 
-	appLoc, err := DetermineResourcePath(staticDir, devDir, resourceDir)
+	appLoc, err := filepath.Abs(resourceDir)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *server.SSHClient, u
 	logger.Info("Using %s for the default password", Password)
 	logger.Info("Web resources directory: %s", staticDir)
 
-	appLoc, err := DetermineResourcePath(staticDir, devDir, resourceDir)
+	appLoc, err := filepath.Abs(resourceDir)
 	if err != nil {
 		return err
 	}

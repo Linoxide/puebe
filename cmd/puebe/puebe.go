@@ -78,7 +78,7 @@ func (c *Config) register() {
 	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address",
 		c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory,
-		"directory to store app data (defaults to ~/.puebe)")
+		"directory to store app data (defaults to ~/.dist)")
 	flag.StringVar(&c.ConnectTo, "connect-to", c.ConnectTo,
 		"connect to this ip only")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
@@ -90,7 +90,7 @@ var devConfig Config = Config{
 
 	// Which address to serve on. Leave blank to automatically assign to a
 	// public interface
-	Address: "",
+	Address: "127.0.0.1",
 	//gnet uses this for TCP incoming and outgoing
 	Port: 9000,
 
@@ -104,10 +104,10 @@ var devConfig Config = Config{
 	WebInterfaceHTTPS:        false,
 	PrintWebInterfaceAddress: false,
 	LaunchBrowser:            true,
-	// Data directory holds app data -- defaults to ~/.puebe
-	DataDirectory: ".puebe",
+	// Data directory holds app data -- defaults to ~/puebe
+	DataDirectory: "./puebe",
 	// Web GUI static resources
-	GUIDirectory: "./src/gui/static/",
+	GUIDirectory: "./gui/static/",
 
 	ConnectTo: "",
 }
@@ -142,7 +142,7 @@ func Run(c *Config) {
 		scheme = "https"
 	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
-	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
+	fullAddress := fmt.Sprintf("%s://%s ", scheme, host)
 	fmt.Printf("Full address: %s", fullAddress)
 
 	if c.PrintWebInterfaceAddress {
@@ -163,10 +163,9 @@ func Run(c *Config) {
 	if c.WebInterface {
 		var err error
 		if c.WebInterfaceHTTPS {
-
 			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, &dconf, c.WebInterfaceUser, c.WebInterfacePass)
 		} else {
-			err = gui.LaunchWebInterface(c.Address, c.GUIDirectory, &dconf)
+			err = gui.LaunchWebInterface(host, c.GUIDirectory, &dconf)
 		}
 
 		if err != nil {
