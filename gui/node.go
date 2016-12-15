@@ -278,7 +278,7 @@ func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
 func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 	
-		ret := Nd.nodeCreate()
+		ret := Nd.ReloadNodes()
 		SendOr404(w, ret)
 	}
 }
@@ -321,7 +321,7 @@ func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	mux.HandleFunc("/node/create", nodeCreate(gateway))
 
 	// Returns all loaded nodes
-	mux.HandleFunc("/node", nodesHandler(gateway))
+	mux.HandleFunc("/node/load", nodesHandler(gateway))
 	// Saves all nodes to disk. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
 
