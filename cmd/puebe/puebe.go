@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Linoxide/puebe/gui"
@@ -47,6 +49,8 @@ type Config struct {
 	GUIDirectory string
 	// This is the value registered with flag, it is converted to LogLevel after parsing
 	LogLevel logging.Level
+	ColorLog bool
+	// This is the value registered with flag, it is converted to LogLevel after parsing
 	logLevel string
 
 	// Will force it to connect to this ip:port, instead of waiting for it
@@ -83,6 +87,10 @@ func (c *Config) register() {
 		"connect to this ip only")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
+	
+	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
+		"Choices are: debug, info, notice, warning, error, critical")
+	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 
 }
 
@@ -110,6 +118,10 @@ var devConfig Config = Config{
 	GUIDirectory: "./gui/static/",
 
 	ConnectTo: "",
+	
+	LogLevel: logging.DEBUG,
+	ColorLog: true,
+	logLevel: "DEBUG",
 }
 
 func (c *Config) Parse() {
@@ -121,6 +133,68 @@ func (c *Config) Parse() {
 func (c *Config) postProcess() {
 
 	c.DataDirectory = gui.InitDataDir(c.DataDirectory)
+	if c.DataDirectory == "" {
+		c.DataDirectory = filepath.Join(c.DataDirectory, "nodes/")
+	}
+
+	ll, err := logging.LogLevel(c.logLevel)
+	panicIfError(err, "Invalid -log-level %s", c.logLevel)
+	c.LogLevel = ll
+}
+
+func panicIfError(err error, msg string, args ...interface{}) {
+	if err != nil {
+		log.Panicf(msg+": %v", append(args, err)...)
+	}
+}
+
+func printProgramStatus() {
+	fn := "goroutine.prof"
+	logger.Debug("Writing goroutine profile to %s", fn)
+	p := pprof.Lookup("goroutine")
+	f, err := os.Create(fn)
+	defer f.Close()
+	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
+	err = p.WriteTo(f, 2)
+	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
+}
+
+func catchInterrupt(quit chan<- int) {
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
+	<-sigchan
+	signal.Stop(sigchan)
+	quit <- 1
+}
+
+// Catches SIGUSR1 and prints internal program state
+func catchDebug() {
+	sigchan := make(chan os.Signal, 1)
+	//signal.Notify(sigchan, syscall.SIGUSR1)
+	signal.Notify(sigchan, syscall.Signal(0xa)) // SIGUSR1 = Signal(0xa)
+	for {
+		select {
+		case <-sigchan:
+			printProgramStatus()
+		}
+	}
+}
+
+func initLogging(level logging.Level, color bool) {
+	format := logging.MustStringFormatter(logFormat)
+	logging.SetFormatter(format)
+	for _, s := range logModules {
+		logging.SetLevel(level, s)
+	}
+	stdout := logging.NewLogBackend(os.Stdout, "", 0)
+	stdout.Color = color
+	logging.SetBackend(stdout)
 }
 
 func configureDaemon(c *Config) server.SSHClient {
@@ -149,16 +223,19 @@ func Run(c *Config) {
 		fmt.Println(fullAddress)
 		return
 	}
-
+	
+	// If the user Ctrl-C's, shutdown properly
+	quit := make(chan int)
+	go catchInterrupt(quit)
+	// Watch for SIGUSR1
+	go catchDebug()
+	
+	gui.InitNodeRPC(c.DataDirectory)
 	dconf := configureDaemon(c)
-	go func() {
-		dconf.Connect()
- 		if !dconf.IsConnected {
-        	wg.Done()
-            return
-        }
-    }()
-    
+	dconf.Connect()
+	currSession, err server.NewSession(dconf.remoteConn, nil, 0)
+	defer currSession.close()
+	
 
 	if c.WebInterface {
 		var err error
