@@ -27,7 +27,7 @@ type Nodes map[string]*Node
 
 type Node struct {
 	Meta        MetaData          `json:"meta"`
-	Entries     []KeyEntry        `json:"entries"`
+	Entries     KeyEntry        `json:"entries"`
 	connection  *server.SSHClient `json:"connection`
 	isConnected bool
 }
