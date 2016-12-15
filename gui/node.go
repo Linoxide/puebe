@@ -274,11 +274,11 @@ func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
 	}
 }
 
-// Returns all loaded nodes
+// Returns nodes
 func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 	
-		ret := Nd.ReloadNodes()
+		ret := Nd.nodeCreate()
 		SendOr404(w, ret)
 	}
 }

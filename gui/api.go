@@ -276,39 +276,6 @@ func ResolveResourceDirectory(path string) string {
 	return ""
 }
 
-func DetermineResourcePath(staticDir string, resourceDir string, devDir string) (string, error) {
-	//check "dev" directory first
-	appLoc := filepath.Join(staticDir, devDir)
-	if !strings.HasPrefix(appLoc, "/") {
-		// Prepend the binary's directory path if appLoc is relative
-		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			return "", err
-		}
-
-		appLoc = filepath.Join(dir, appLoc)
-	}
-
-	if _, err := os.Stat(appLoc); os.IsNotExist(err) {
-		//check dist directory
-		appLoc = filepath.Join(staticDir, resourceDir)
-		if !strings.HasPrefix(appLoc, "/") {
-			// Prepend the binary's directory path if appLoc is relative
-			dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-			if err != nil {
-				return "", err
-			}
-
-			appLoc = filepath.Join(dir, appLoc)
-		}
-
-		if _, err := os.Stat(appLoc); os.IsNotExist(err) {
-			return "", err
-		}
-	}
-
-	return appLoc, nil
-}
 
 func CopyFile(dst string, src io.Reader) (n int64, err error) {
 	// check the existence of dst file.

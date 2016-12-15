@@ -100,10 +100,6 @@ func NewGUIMux(appLoc string, daemon *server.SSHClient) *http.ServeMux {
 
 	// Node interface
 	RegisterNodeHandlers(mux, daemon)
-	// Network stats interface
-	RegisterNetworkHandlers(mux, daemon)
-	// Network API handler
-	RegisterApiHandlers(mux, daemon)
 
 	return mux
 }
