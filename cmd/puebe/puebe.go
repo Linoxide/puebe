@@ -4,8 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime/pprof"
 	"strconv"
 	"sync"
 	"syscall"
@@ -19,6 +22,15 @@ import (
 
 )
 
+var (
+	logger     = logging.MustGetLogger("main")
+	logFormat  = "[puebe].%{module}:%{level}] %{message}"
+	logModules = []string{
+		"main",
+		"gui",
+		"server",
+	}
+)
 
 const maxThroughPut = 6553600
 
@@ -91,8 +103,9 @@ func (c *Config) register() {
 	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
-
+		"Add terminal colors to log output")
 }
+
 
 var devConfig Config = Config{
 
@@ -233,8 +246,12 @@ func Run(c *Config) {
 	gui.InitNodeRPC(c.DataDirectory)
 	dconf := configureDaemon(c)
 	dconf.Connect()
-	currSession, err server.NewSession(dconf.remoteConn, nil, 0)
-	defer currSession.close()
+	currSession, err := server.NewSession(dconf.RemoteConn, nil, 0)
+	if err != nil {
+		log.Print("Could not create new ssh session")
+		log.Print(err.Error())
+	}
+	defer currSession.Close()
 	
 
 	if c.WebInterface {
