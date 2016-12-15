@@ -1,36 +1,22 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
+	"flag"
 	"fmt"
-	"io"
 	"log"
-	"net"
-	"net/http"
 	"os"
-	"os/signal"
-	"strings"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/Linoxide/puebe/gui"
 	"github.com/Linoxide/puebe/server"
 	_ "github.com/go-sql-driver/mysql"
 	logging "github.com/op/go-logging"
-	"github.com/scottkiss/gomagic/dbmagic"
 	"github.com/toqueteos/webbrowser"
 
-	"golang.org/x/crypto/ssh"
 )
 
-type rpcHandler struct {
-	workerNum uint
-	ops       chan operation // request channel
-	// reqChan chan
-	close    chan struct{}
-	mux      *http.ServeMux
-	handlers map[string]jobHandler
-}
 
 const maxThroughPut = 6553600
 
@@ -134,26 +120,22 @@ func (c *Config) Parse() {
 
 func (c *Config) postProcess() {
 
-	c.DataDirectory = util.InitDataDir(c.DataDirectory)
-
-	if c.NodeDirectory == "" {
-		c.NodeDirectory = filepath.Join(c.DataDirectory, "nodes/")
-	}
+	c.DataDirectory = gui.InitDataDir(c.DataDirectory)
 }
 
 func configureDaemon(c *Config) server.SSHClient {
 
 	var dc server.SSHClient
-	dc.SSHClientConfig.dataDir = c.DataDirectory
-	dc.SSHClientConfig.Port = c.Port
-	dc.SSHClientConfig.Host = c.Address
+	dc.SSHClientConfig.Host = c.Address + ":" + strconv.Itoa(c.Port)
 	dc.SSHClientConfig.User = c.WebInterfaceUser
-	dc.SSHClientConfig.Pass = c.WebInterfacePass
+	dc.SSHClientConfig.Password = c.WebInterfacePass
 
 	return dc
 }
 
 func Run(c *Config) {
+	var wg sync.WaitGroup
+    wg.Add(1)
 
 	scheme := "http"
 	if c.WebInterfaceHTTPS {
@@ -161,35 +143,35 @@ func Run(c *Config) {
 	}
 	host := fmt.Sprintf("%s:%d", c.WebInterfaceAddr, c.WebInterfacePort)
 	fullAddress := fmt.Sprintf("%s://%s", scheme, host)
-	logger.Critical("Full address: %s", fullAddress)
+	fmt.Printf("Full address: %s", fullAddress)
 
 	if c.PrintWebInterfaceAddress {
 		fmt.Println(fullAddress)
 		return
 	}
 
-	// If the user Ctrl-C's, shutdown properly
-	quit := make(chan int)
-	go catchInterrupt(quit)
-	// Watch for SIGUSR1
-	go catchDebug()
-
 	dconf := configureDaemon(c)
-	node := server.NewSessionWithChannel(dconf, quit, nil, 0)
-	go node.Connect()
+	go func() {
+		dconf.Connect()
+ 		if !dconf.IsConnected {
+        	wg.Done()
+            return
+        }
+    }()
+    
 
 	if c.WebInterface {
 		var err error
 		if c.WebInterfaceHTTPS {
 
-			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, node, c.WebInterfaceUser, c.WebInterfacePass)
+			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, &dconf, c.WebInterfaceUser, c.WebInterfacePass)
 		} else {
-			err = gui.LaunchWebInterface(c.Address, c.GUIDirectory, node)
+			err = gui.LaunchWebInterface(c.Address, c.GUIDirectory, &dconf)
 		}
 
 		if err != nil {
-			logger.Error(err.Error())
-			logger.Error("Failed to start web GUI")
+			log.Print(err.Error())
+			log.Print("Failed to start web GUI")
 			os.Exit(1)
 		}
 
@@ -198,19 +180,17 @@ func Run(c *Config) {
 				// Wait a moment just to make sure the http interface is up
 				time.Sleep(time.Millisecond * 100)
 
-				logger.Info("Launching System Browser with %s", fullAddress)
+				fmt.Printf("Launching System Browser with %s", fullAddress)
 				if err := OpenBrowser(fullAddress); err != nil {
-					logger.Error(err.Error())
+					log.Print(err.Error())
 				}
 			}()
 		}
 	}
 
-	<-quit
-	close(node.connect)
-
-	logger.Info("Shutting down")
-	logger.Info("Goodbye")
+	fmt.Printf("Shutting down")
+	fmt.Printf("Goodbye")
+	wg.Wait()
 }
 
 func OpenBrowser(url string) error {
@@ -221,25 +201,4 @@ func main() {
 
 	devConfig.Parse()
 	Run(&devConfig)
-}
-
-func catchInterrupt(quit chan<- int) {
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt)
-	<-sigchan
-	signal.Stop(sigchan)
-	quit <- 1
-}
-
-// Catches SIGUSR1 and prints internal program state
-func catchDebug() {
-	sigchan := make(chan os.Signal, 1)
-	//signal.Notify(sigchan, syscall.SIGUSR1)
-	signal.Notify(sigchan, syscall.Signal(0xa)) // SIGUSR1 = Signal(0xa)
-	for {
-		select {
-		case <-sigchan:
-			printProgramStatus()
-		}
-	}
 }

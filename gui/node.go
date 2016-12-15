@@ -182,7 +182,7 @@ func (self *NodeRPC) CreateNode(user string, pass string, host string, port int,
 	conn := nde.connection.Connect()
 	if conn == nil {
 		err := errors.New("Could not create connection")
-		nde.isConnected = false
+		nde.IsConnected = false
 		return nde, err
 	}
 

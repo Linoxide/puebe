@@ -27,7 +27,7 @@ type Node struct {
 	Meta        MetaData          `json:"meta"`
 	Entries     KeyEntry        `json:"entries"`
 	connection  *server.SSHClient `json:"connection`
-	isConnected bool
+	IsConnected bool
 }
 
 type MetaData struct {

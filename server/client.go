@@ -28,7 +28,7 @@ var (
 type SSHClient struct {
 	SSHClientConfig
 	remoteConn  *ssh.Client
-	isConnected bool
+	IsConnected bool
 }
 
 type SSHClientConfig struct {
@@ -99,7 +99,7 @@ func (c *SSHClient) Connect() (conn *ssh.Client) {
 func (c *SSHClient) TransferData(target string, data []byte) (stdout, stderr string, err error) {
 	go c.maxThroughputControl()
 
-	if c.isConnected == false {
+	if c.IsConnected == false {
 		conn := c.Connect()
 		if conn == nil {
 			err = errors.New("Could not make connection")
@@ -146,7 +146,7 @@ func (c *SSHClient) TransferData(target string, data []byte) (stdout, stderr str
 }
 
 func (c *SSHClient) Cmd(cmd string, sn *SshSession, deadline *time.Time, idleTimeout int) (output, errput string, currentSession *SshSession, err error) {
-	if c.isConnected == false {
+	if c.IsConnected == false {
 		conn := c.Connect()
 		if conn == nil {
 			err = errors.New("Could not make connection")
@@ -174,7 +174,7 @@ func (c *SSHClient) Cmd(cmd string, sn *SshSession, deadline *time.Time, idleTim
 }
 
 func (c *SSHClient) Pipe(rw ReadWriteCloser, pty *PtyInfo, deadline *time.Time, idleTimeout int) (currentSession *SshSession, err error) {
-	if c.isConnected == false {
+	if c.IsConnected == false {
 		conn := c.Connect()
 		if conn == nil {
 			err = errors.New("Could not make connection")
