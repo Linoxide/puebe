@@ -34,7 +34,7 @@ func makeConfig(user string, password string, privateKey string) (config *ssh.Cl
 		user = "root"
 		password = "root"
 	}
-	
+
 	config = &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{

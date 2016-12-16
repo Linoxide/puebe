@@ -19,7 +19,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	logging "github.com/op/go-logging"
 	"github.com/toqueteos/webbrowser"
-
 )
 
 var (
@@ -100,13 +99,12 @@ func (c *Config) register() {
 		"connect to this ip only")
 	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory,
 		"static content directory for the html gui")
-	
+
 	flag.StringVar(&c.logLevel, "log-level", c.logLevel,
 		"Choices are: debug, info, notice, warning, error, critical")
 	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog,
 		"Add terminal colors to log output")
 }
-
 
 var devConfig Config = Config{
 
@@ -132,7 +130,7 @@ var devConfig Config = Config{
 	GUIDirectory: "./gui/static/",
 
 	ConnectTo: "",
-	
+
 	LogLevel: logging.DEBUG,
 	ColorLog: true,
 	logLevel: "DEBUG",
@@ -148,10 +146,10 @@ func (c *Config) postProcess() {
 
 	c.DataDirectory = gui.InitDataDir(c.DataDirectory)
 	Nd.InitNodeRPC(c.DataDirectory)
-	
+
 	if Nd.NodeDirectory == "" {
 		fp := filepath.Join(c.DataDirectory, "/")
-		Nd.NodeDirectory = filepath.Join(fp,c.GUIDirectory)
+		Nd.NodeDirectory = filepath.Join(fp, c.GUIDirectory)
 	}
 
 	ll, err := logging.LogLevel(c.logLevel)
@@ -217,13 +215,13 @@ func initLogging(level logging.Level, color bool) {
 func configureDaemon(c *Config) gui.NodeRPC { //issues may pop up here.
 
 	Nd.CreateNode(c.WebInterfaceUser, c.WebInterfacePass, c.Address, c.Port, "Base Node")
-	
+
 	return *Nd
 }
 
 func Run(c *Config) {
 	var wg sync.WaitGroup
-    wg.Add(1)
+	wg.Add(1)
 
 	scheme := "http"
 	if c.WebInterfaceHTTPS {
@@ -237,15 +235,14 @@ func Run(c *Config) {
 		fmt.Println(fullAddress)
 		return
 	}
-	
+
 	// If the user Ctrl-C's, shutdown properly
 	quit := make(chan int)
 	go catchInterrupt(quit)
 	// Watch for SIGUSR1
 	go catchDebug()
-	
-	
-	dconf := configureDaemon(c) //issues may pop up here too
+
+	dconf := configureDaemon(c)                //issues may pop up here too
 	if dconf.Nodes[0].Connection.IsConnected { //to check if this part is really necessary.
 		currSession, _ := server.NewSession(&dconf.Nodes[0].Connection.RemoteConn, nil, 0)
 		defer currSession.Close()
@@ -253,7 +250,6 @@ func Run(c *Config) {
 	} else {
 		log.Print("Could not create new ssh session")
 	}
-	
 
 	if c.WebInterface {
 		var err error

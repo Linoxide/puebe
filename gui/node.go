@@ -16,6 +16,7 @@ import (
 
 	"github.com/Linoxide/puebe/server"
 )
+
 type Nodes []Node
 
 type NodeRPC struct {
@@ -58,7 +59,6 @@ func backupWltFile(src, dst string) error {
 	return nil
 }
 
-
 // Saves to filename, but won't overwrite existing
 func (self *Node) SaveSafe(filename string) error {
 	return SaveJSONSafe(filename, self, 0600)
@@ -76,14 +76,14 @@ func Add(nodes Nodes, w Node) error {
 			return errors.New("Nodes.Add, Node name would conflict with existing node, renaming")
 		}
 	}
-	
+
 	if len(nodes) == cap(nodes) {
-		newslice := make(Nodes, (len(nodes) +1)*2)
+		newslice := make(Nodes, (len(nodes)+1)*2)
 		copy(newslice, nodes)
-    	nodes = newslice
-    }
+		nodes = newslice
+	}
 	nodes = append(nodes, w)
-	
+
 	return nil
 }
 
@@ -93,8 +93,8 @@ func Get(nodes Nodes, nodeId string) (Node, bool) {
 		if node.Meta.nodeId == id {
 			return node, true
 		}
-	}	
-	
+	}
+
 	return Node{}, false
 }
 
@@ -103,7 +103,7 @@ func Get(nodes Nodes, nodeId string) (Node, bool) {
 func Save(nodes Nodes, dir string) []error {
 	errs := make([]error, 0)
 	for i, w := range nodes {
-		if err := SaveJSON(dir, w,0600); err != nil {
+		if err := SaveJSON(dir, w, 0600); err != nil {
 			errs[i] = err
 		}
 	}
@@ -117,13 +117,11 @@ func (rpc *NodeRPC) InitNodeRPC(nodeDir string) {
 
 	rpc.NodeDirectory = nodeDir
 	rpc.Nodes, _ = LoadNodes(rpc.NodeDirectory)
-	
 
 	rpc.CreateNode("root", "root", "127.0.0.1", 9000, "Base connection")
-	
+
 	return
 }
-
 
 func (self *NodeRPC) ReloadNodes() error {
 	nodes, err := LoadNodes(self.NodeDirectory)
@@ -135,7 +133,7 @@ func (self *NodeRPC) ReloadNodes() error {
 }
 
 func (self *NodeRPC) SaveNode(nodeID string) error {
-	if _,ok := Get(self.Nodes, nodeID); ok {
+	if _, ok := Get(self.Nodes, nodeID); ok {
 		return SaveJSON(self.NodeDirectory, self.Nodes, 0600)
 	}
 	return fmt.Errorf("Unable to save node %s", nodeID)
@@ -153,19 +151,19 @@ func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, 
 	n.Meta.nodeType = "SSH Connection"
 	n.Meta.nodeZone = "us-pacific-est"
 	p := strconv.Itoa(port)
-	n.Connection.SSHClientConfig.Host = host+":"+p
+	n.Connection.SSHClientConfig.Host = host + ":" + p
 	n.Connection.SSHClientConfig.User = user
 	n.Connection.SSHClientConfig.Password = pass
-	
+
 	//append node to nodes array
-	
+
 	m := len(rpc.Nodes)
-    slice := make(Nodes, (m+1))
-   
-    m = copy(slice, rpc.Nodes)
-    rpc.Nodes = slice
-    rpc.Nodes[m] = *n
-	
+	slice := make(Nodes, (m + 1))
+
+	m = copy(slice, rpc.Nodes)
+	rpc.Nodes = slice
+	rpc.Nodes[m] = *n
+
 	conn := n.Connection.Connect()
 	if conn == nil {
 		err := errors.New("Could not create connection")
@@ -198,7 +196,7 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 		// the node name may dup, rename it till no conflict.
 		for {
 			p, _ := strconv.Atoi(port)
-			*node, err = Nd.CreateNode(user, pass, host,p, label)
+			*node, err = Nd.CreateNode(user, pass, host, p, label)
 			if err != nil && strings.Contains(err.Error(), "renaming") {
 				continue
 			}
@@ -214,7 +212,6 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 		SendOr500(w, rlt)
 	}
 }
-
 
 // Update node label
 func nodeUpdateHandler(gateway *server.SSHClient) http.HandlerFunc {
@@ -264,7 +261,7 @@ func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
 // Returns nodes
 func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-	
+
 		ret := Nd.ReloadNodes()
 		SendOr404(w, ret)
 	}
@@ -273,7 +270,7 @@ func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 // Saves all loaded nodes
 func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		errs := Nd.SaveNodes() 
+		errs := Nd.SaveNodes()
 		if len(errs) != 0 {
 			err := ""
 			for _, e := range errs {

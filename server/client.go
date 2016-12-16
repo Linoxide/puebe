@@ -62,11 +62,11 @@ func (c *SSHClient) maxThroughputControl() {
 }
 
 func (c *SSHClient) Connect() (conn *ssh.Client) {
-	
+
 	if (*c).IsConnected {
 		return &c.RemoteConn
 	}
-	
+
 	port := ""
 	host := (*c).Host
 	hstr := strings.SplitN(host, ":", 2)
@@ -84,7 +84,7 @@ func (c *SSHClient) Connect() (conn *ssh.Client) {
 		}
 		sc, chans, reqs, err := ssh.NewClientConn(connNet, host+":"+port, config)
 		if err != nil {
-			return nil;
+			return nil
 		}
 		conn = ssh.NewClient(sc, chans, reqs)
 	} else {

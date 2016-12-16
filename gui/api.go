@@ -24,7 +24,7 @@ import (
 const NodeExt = "nde"
 
 type Node struct {
-	Meta        MetaData          `json:"meta"`
+	Meta        MetaData         `json:"meta"`
 	Connection  server.SSHClient `json:"connection`
 	IsConnected bool
 }
@@ -274,7 +274,6 @@ func ResolveResourceDirectory(path string) string {
 	log.Panic("GUI directory not found")
 	return ""
 }
-
 
 func CopyFile(dst string, src io.Reader) (n int64, err error) {
 	// check the existence of dst file.
