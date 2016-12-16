@@ -132,6 +132,7 @@ func NewNodeRPC(nodeDir string) *NodeRPC {
 	}
 
 	if len(w) == 0 {
+		w = make([]Node, 1)
 		nodeName := NewNodeFilename()
 		rpc.CreateNode(w[0].Entries.userName, w[0].Entries.Password, w[0].Entries.Address, w[0].Entries.Port, nodeName)
 		if err := rpc.SaveNode(nodeName); err != nil {
@@ -165,28 +166,34 @@ func (self *NodeRPC) SaveNodes() []error {
 func (self *NodeRPC) CreateNode(user string, pass string, host string, port int, label string) (Node, error) {
 
 	node := &NodeRPC{}
-	node.Nodes[0].Meta.nodeName = label
-	node.Nodes[0].Meta.nodeId = rand.Int()
-	node.Nodes[0].Meta.nodeType = "SSH Connection"
-	node.Nodes[0].Meta.nodeZone = "us-pacific-est"
+	n := new(Node)
+	n.Meta.nodeName = label
+	n.Meta.nodeId = rand.Int()
+	n.Meta.nodeType = "SSH Connection"
+	n.Meta.nodeZone = "us-pacific-est"
 
-	node.Nodes[0].Entries.Address = host
-	node.Nodes[0].Entries.Port = port
-	node.Nodes[0].Entries.userName = user
-	node.Nodes[0].Entries.Password = pass
-	nodeCreate(node.Nodes[0].connection)
+	n.Entries.Address = host
+	n.Entries.Port = port
+	n.Entries.userName = user
+	n.Entries.Password = pass
+	nodeCreate(n.connection)
+	//append node to nodes array
 	
-	nde := Node{}
-	nde = node.Nodes[0]
-
-	conn := nde.connection.Connect()
+	m := len(node.Nodes)
+    slice := make(Nodes, (m+1))
+   
+    m = copy(slice, node.Nodes)
+    node.Nodes = slice
+    node.Nodes[m] = *n
+	
+	conn := n.connection.Connect()
 	if conn == nil {
 		err := errors.New("Could not create connection")
-		nde.IsConnected = false
-		return nde, err
+		n.IsConnected = false
+		return *n, err
 	}
 
-	return nde, nil
+	return *n, nil
 }
 
 func (self *NodeRPC) GetNode(nodeID string) Node {
