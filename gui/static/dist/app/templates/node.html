@@ -14,19 +14,7 @@
                     </tab-heading>
                 </a>
             </li>
-            <li [class.active]="displayMode === displayModeEnum.fifth">
-                <div class="btn-group node-menu">
-                    <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button">
-                        <i class="fa fa-gear"></i>
-                    </button>
-                    <ul role="menu" class="dropdown-menu pull-right">
-                        <li><a href="#" (click)="selectMenu('Name', $event)">Name</a></li>
-                        <li><a href="#" (click)="selectMenu('ID', $event)">Instance ID</a></li>
-                        <li><a href="#" (click)="selectMenu('Type', $event)">Instance Type</a></li>
-                        <li><a href="#" (click)="selectMenu('Zone', $event">Availability Zone</a></li>
-                    </ul>
-                </div>
-            </li>
+            
         </ul>
         <div class="tab-content">
             <div [class.active]="displayMode === displayModeEnum.first"  class="tab-pane ng-scope active">
@@ -54,8 +42,7 @@
                             <thead>
                             <tr class="dark-row">
                             	<td style="width:80px">
-                              	<a href="#" (click)="sortHistory('time')" class="text-underline">Time
-                              	<i *ngIf="sortDir.time!=0" class="glyphicon glyphicon-triangle-{{sortDir.time==1?'top':'bottom'}}"></i></a>
+                              	<a href="#" (click)="sortHistory('time')" class="text-underline"></a>
                                 <th class="text-center">Name</th>
                                 <th class="text-center">Instance ID</th>
                                 <th class="text-center">Instance Type</th>
