@@ -24,7 +24,6 @@ $ git clone git@github.com:Linoxide/puebe.git
 $ cd puebe
 $ go get github.com/go-sql-driver/mysql
 $ go get github.com/scottkiss/gomagic/dbmagic
-$ go get github.com/toqueteos/webbrowser
 $ go get github.com/op/go-logging
 ```
 
