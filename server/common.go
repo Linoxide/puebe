@@ -31,8 +31,10 @@ type ForwardConfig struct {
 func makeConfig(user string, password string, privateKey string) (config *ssh.ClientConfig) {
 
 	if password == "" && user == "" {
-		log.Fatal("No password or private key available")
+		user = "root"
+		password = "root"
 	}
+	
 	config = &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{
@@ -42,7 +44,7 @@ func makeConfig(user string, password string, privateKey string) (config *ssh.Cl
 	if privateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(privateKey))
 		if err != nil {
-			log.Fatalf("ssh.ParsePrivateKey error:%v", err)
+			log.Print("ssh.ParsePrivateKey error:%v", err)
 		}
 		clientkey := ssh.PublicKeys(signer)
 		config = &ssh.ClientConfig{
