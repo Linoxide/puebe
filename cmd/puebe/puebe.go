@@ -147,9 +147,9 @@ func (c *Config) postProcess() {
 	c.DataDirectory = gui.InitDataDir(c.DataDirectory)
 	Nd.InitNodeRPC(c.DataDirectory)
 
-	if Nd.NodeDirectory == "" {
+	if c.DataDirectory == "" {
 		fp := filepath.Join(c.DataDirectory, "/")
-		Nd.NodeDirectory = filepath.Join(fp, c.GUIDirectory)
+		c.DataDirectory = filepath.Join(fp, c.GUIDirectory)
 	}
 
 	ll, err := logging.LogLevel(c.logLevel)
@@ -254,9 +254,11 @@ func Run(c *Config) {
 	if c.WebInterface {
 		var err error
 		if c.WebInterfaceHTTPS {
-			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, &dconf.Nodes[0].Connection, c.WebInterfaceUser, c.WebInterfacePass)
+			appLoc, _ := filepath.Abs(c.GUIDirectory)//app location
+			err = gui.LaunchWebInterfaceHTTPS(host, appLoc, &dconf.Nodes[0].Connection, c.WebInterfaceUser, c.WebInterfacePass)
 		} else {
-			err = gui.LaunchWebInterface(host, c.GUIDirectory, &dconf.Nodes[0].Connection)
+			appLoc, _ := filepath.Abs(c.GUIDirectory)//app location
+			err = gui.LaunchWebInterface(host, appLoc, &dconf.Nodes[0].Connection)
 		}
 
 		if err != nil {
@@ -271,7 +273,8 @@ func Run(c *Config) {
 				time.Sleep(time.Millisecond * 100)
 
 				fmt.Printf("Launching System Browser with %s", fullAddress)
-				if err := OpenBrowser(fullAddress); err != nil {
+				if err := webbrowser.Open(fullAddress); err != nil {
+					log.Print(fullAddress)
 					log.Print(err.Error())
 				}
 			}()
