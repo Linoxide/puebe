@@ -147,7 +147,7 @@ func (c *Config) postProcess() {
 
 	c.DataDirectory = gui.InitDataDir(c.DataDirectory)
 	if c.DataDirectory == "" {
-		c.DataDirectory = filepath.Join(c.DataDirectory, "nodes/")
+		c.DataDirectory = filepath.Join(c.DataDirectory, c.GUIDirectory)
 	}
 
 	ll, err := logging.LogLevel(c.logLevel)
@@ -243,9 +243,10 @@ func Run(c *Config) {
 	// Watch for SIGUSR1
 	go catchDebug()
 	
-	gui.InitNodeRPC(c.DataDirectory)
+	path, _ := filepath.Abs("./gui/static/")
+	gui.InitNodeRPC(path)
 	dconf := configureDaemon(c)
-	dconf.Connect()
+	go dconf.Connect()
 	currSession, err := server.NewSession(dconf.RemoteConn, nil, 0)
 	if err != nil {
 		log.Print("Could not create new ssh session")
