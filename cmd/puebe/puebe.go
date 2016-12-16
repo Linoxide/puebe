@@ -127,7 +127,7 @@ var devConfig Config = Config{
 	PrintWebInterfaceAddress: false,
 	LaunchBrowser:            true,
 	// Data directory holds app data -- defaults to ~/puebe
-	DataDirectory: "~/puebe",
+	DataDirectory: "./puebe",
 	// Web GUI static resources
 	GUIDirectory: "./gui/static/",
 
@@ -150,7 +150,8 @@ func (c *Config) postProcess() {
 	Nd.InitNodeRPC(c.DataDirectory)
 	
 	if Nd.NodeDirectory == "" {
-		Nd.NodeDirectory = filepath.Join(c.DataDirectory, c.GUIDirectory)
+		fp := filepath.Join(c.DataDirectory, "/")
+		Nd.NodeDirectory = filepath.Join(fp,c.GUIDirectory)
 	}
 
 	ll, err := logging.LogLevel(c.logLevel)
