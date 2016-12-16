@@ -17,8 +17,8 @@ var (
 )
 
 const (
-	resourceDir = "dist/"
-	devDir      = "dev/"
+	resourceDir = "gui/static/dist/"
+	devDir      = "gui/static/dev/"
 	indexPage   = "index.html"
 )
 
