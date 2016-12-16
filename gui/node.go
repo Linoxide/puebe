@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
+	//"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -113,30 +113,17 @@ func Save(nodes Nodes, dir string) []error {
 	return errs
 }
 
-func InitNodeRPC(nodeDir string) {
-	Nd = NewNodeRPC(nodeDir)
-}
-
-func NewNodeRPC(nodeDir string) *NodeRPC {
-	rpc := &NodeRPC{}
-
-	if err := os.MkdirAll(nodeDir, os.FileMode(0700)); err != nil {
-		log.Print("Failed to create node directory %s: %v", nodeDir, err)
-	}
+func (rpc *NodeRPC) InitNodeRPC(nodeDir string) {
 
 	rpc.NodeDirectory = nodeDir
+	rpc.Nodes, _ = LoadNodes(rpc.NodeDirectory)
+	
 
-	w, err := LoadNodes(rpc.NodeDirectory)
-	if err != nil {
-		log.Print("Failed to load all nodes: %v", err)
-	}
-
-	if len(w) == 0 {
-		rpc.CreateNode("root", "root", "127.0.0.1", 9000, "Base connection")
-	}
-
-	return rpc
+	rpc.CreateNode("root", "root", "127.0.0.1", 9000, "Base connection")
+	
+	return
 }
+
 
 func (self *NodeRPC) ReloadNodes() error {
 	nodes, err := LoadNodes(self.NodeDirectory)
