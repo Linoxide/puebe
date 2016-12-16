@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime/pprof"
-	"strconv"
+	//"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -30,6 +30,7 @@ var (
 		"gui",
 		"server",
 	}
+	Nd = &gui.NodeRPC{}
 )
 
 const maxThroughPut = 6553600
@@ -126,7 +127,7 @@ var devConfig Config = Config{
 	PrintWebInterfaceAddress: false,
 	LaunchBrowser:            true,
 	// Data directory holds app data -- defaults to ~/puebe
-	DataDirectory: "./puebe",
+	DataDirectory: "~/puebe",
 	// Web GUI static resources
 	GUIDirectory: "./gui/static/",
 
@@ -146,8 +147,10 @@ func (c *Config) Parse() {
 func (c *Config) postProcess() {
 
 	c.DataDirectory = gui.InitDataDir(c.DataDirectory)
-	if c.DataDirectory == "" {
-		c.DataDirectory = filepath.Join(c.DataDirectory, c.GUIDirectory)
+	Nd.InitNodeRPC(c.DataDirectory)
+	
+	if Nd.NodeDirectory == "" {
+		Nd.NodeDirectory = filepath.Join(c.DataDirectory, c.GUIDirectory)
 	}
 
 	ll, err := logging.LogLevel(c.logLevel)
@@ -210,14 +213,11 @@ func initLogging(level logging.Level, color bool) {
 	logging.SetBackend(stdout)
 }
 
-func configureDaemon(c *Config) server.SSHClient {
+func configureDaemon(c *Config) gui.NodeRPC { //issues may pop up here.
 
-	var dc server.SSHClient
-	dc.SSHClientConfig.Host = c.Address + ":" + strconv.Itoa(c.Port)
-	dc.SSHClientConfig.User = c.WebInterfaceUser
-	dc.SSHClientConfig.Password = c.WebInterfacePass
-
-	return dc
+	Nd.CreateNode(c.WebInterfaceUser, c.WebInterfacePass, c.Address, c.Port, "Base Node")
+	
+	return *Nd
 }
 
 func Run(c *Config) {
@@ -243,24 +243,23 @@ func Run(c *Config) {
 	// Watch for SIGUSR1
 	go catchDebug()
 	
-	path, _ := filepath.Abs("./gui/static/")
-	gui.InitNodeRPC(path)
-	dconf := configureDaemon(c)
-	go dconf.Connect()
-	currSession, err := server.NewSession(&dconf.RemoteConn, nil, 0)
-	if err != nil {
+	
+	dconf := configureDaemon(c) //issues may pop up here too
+	if dconf.Nodes[0].Connection.IsConnected { //to check if this part is really necessary.
+		currSession, _ := server.NewSession(&dconf.Nodes[0].Connection.RemoteConn, nil, 0)
+		defer currSession.Close()
+
+	} else {
 		log.Print("Could not create new ssh session")
-		log.Print(err.Error())
 	}
-	defer currSession.Close()
 	
 
 	if c.WebInterface {
 		var err error
 		if c.WebInterfaceHTTPS {
-			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, &dconf, c.WebInterfaceUser, c.WebInterfacePass)
+			err = gui.LaunchWebInterfaceHTTPS(host, c.GUIDirectory, &dconf.Nodes[0].Connection, c.WebInterfaceUser, c.WebInterfacePass)
 		} else {
-			err = gui.LaunchWebInterface(host, c.GUIDirectory, &dconf)
+			err = gui.LaunchWebInterface(host, c.GUIDirectory, &dconf.Nodes[0].Connection)
 		}
 
 		if err != nil {
