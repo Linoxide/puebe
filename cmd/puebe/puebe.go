@@ -247,7 +247,7 @@ func Run(c *Config) {
 	gui.InitNodeRPC(path)
 	dconf := configureDaemon(c)
 	go dconf.Connect()
-	currSession, err := server.NewSession(dconf.RemoteConn, nil, 0)
+	currSession, err := server.NewSession(&dconf.RemoteConn, nil, 0)
 	if err != nil {
 		log.Print("Could not create new ssh session")
 		log.Print(err.Error())

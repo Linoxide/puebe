@@ -27,7 +27,7 @@ var (
 
 type SSHClient struct {
 	SSHClientConfig
-	RemoteConn  *ssh.Client
+	RemoteConn  ssh.Client
 	IsConnected bool
 }
 
@@ -62,38 +62,42 @@ func (c *SSHClient) maxThroughputControl() {
 }
 
 func (c *SSHClient) Connect() (conn *ssh.Client) {
-	if c.RemoteConn != nil {
-		return
+	
+	if (*c).IsConnected {
+		return &c.RemoteConn
 	}
-	port := "22"
-	host := c.Host
+	
+	port := ""
+	host := (*c).Host
 	hstr := strings.SplitN(host, ":", 2)
 	if len(hstr) == 2 {
 		host = hstr[0]
 		port = hstr[1]
 	}
 
-	config := makeConfig(c.User, c.Password, c.Privatekey)
+	config := makeConfig((*c).User, (*c).Password, (*c).Privatekey)
 
-	if c.DialTimeoutSecond > 0 {
-		connNet, err := net.DialTimeout("tcp", host+":"+port, time.Duration(c.DialTimeoutSecond)*time.Second)
+	if (*c).DialTimeoutSecond > 0 {
+		connNet, err := net.DialTimeout("tcp", host+":"+port, time.Duration((*c).DialTimeoutSecond)*time.Second)
 		if err != nil {
-			return
+			return nil
 		}
 		sc, chans, reqs, err := ssh.NewClientConn(connNet, host+":"+port, config)
 		if err != nil {
-			return
+			return nil;
 		}
 		conn = ssh.NewClient(sc, chans, reqs)
 	} else {
 		conn, err := ssh.Dial("tcp", host+":"+port, config)
 		if err != nil {
+			conn = nil
 			return conn
 		}
 	}
 	log.Println("dial ssh success")
-	c.RemoteConn = conn
-	return
+	c.RemoteConn = *conn
+	(*c).IsConnected = true
+	return &c.RemoteConn
 }
 
 func (c *SSHClient) TransferData(target string, data []byte) (stdout, stderr string, err error) {
@@ -106,7 +110,7 @@ func (c *SSHClient) TransferData(target string, data []byte) (stdout, stderr str
 			return
 		}
 	}
-	currentSession, err := NewSession(c.RemoteConn, nil, 0)
+	currentSession, err := NewSession(&c.RemoteConn, nil, 0)
 	if err != nil {
 		return
 	}
@@ -154,7 +158,7 @@ func (c *SSHClient) Cmd(cmd string, sn *SshSession, deadline *time.Time, idleTim
 		}
 	}
 	if sn == nil {
-		currentSession, err = NewSession(c.RemoteConn, deadline, idleTimeout)
+		currentSession, err = NewSession(&c.RemoteConn, deadline, idleTimeout)
 	} else {
 		currentSession = sn
 		currentSession.SetDeadline(deadline)
@@ -181,7 +185,7 @@ func (c *SSHClient) Pipe(rw ReadWriteCloser, pty *PtyInfo, deadline *time.Time, 
 			return
 		}
 	}
-	currentSession, err = NewSession(c.RemoteConn, deadline, idleTimeout)
+	currentSession, err = NewSession(&c.RemoteConn, deadline, idleTimeout)
 	if err != nil {
 		return
 	}
