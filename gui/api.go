@@ -25,8 +25,7 @@ const NodeExt = "nde"
 
 type Node struct {
 	Meta        MetaData          `json:"meta"`
-	Entries     KeyEntry        `json:"entries"`
-	connection  server.SSHClient `json:"connection`
+	Connection  server.SSHClient `json:"connection`
 	IsConnected bool
 }
 

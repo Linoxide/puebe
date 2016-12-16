@@ -121,23 +121,18 @@ func NewNodeRPC(nodeDir string) *NodeRPC {
 	rpc := &NodeRPC{}
 
 	if err := os.MkdirAll(nodeDir, os.FileMode(0700)); err != nil {
-		log.Panicf("Failed to create node directory %s: %v", nodeDir, err)
+		log.Print("Failed to create node directory %s: %v", nodeDir, err)
 	}
 
 	rpc.NodeDirectory = nodeDir
 
 	w, err := LoadNodes(rpc.NodeDirectory)
 	if err != nil {
-		log.Panicf("Failed to load all nodes: %v", err)
+		log.Print("Failed to load all nodes: %v", err)
 	}
 
 	if len(w) == 0 {
-		w = make([]Node, 1)
-		nodeName := NewNodeFilename()
-		rpc.CreateNode(w[0].Entries.userName, w[0].Entries.Password, w[0].Entries.Address, w[0].Entries.Port, nodeName)
-		if err := rpc.SaveNode(nodeName); err != nil {
-			log.Panicf("Failed to save nodes to %s: %v", rpc.NodeDirectory, err)
-		}
+		rpc.CreateNode("root", "root", "127.0.0.1", 9000, "Base connection")
 	}
 
 	return rpc
@@ -163,30 +158,28 @@ func (self *NodeRPC) SaveNodes() []error {
 	return Save(self.Nodes, self.NodeDirectory)
 }
 
-func (self *NodeRPC) CreateNode(user string, pass string, host string, port int, label string) (Node, error) {
+func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, label string) (Node, error) {
 
-	node := &NodeRPC{}
 	n := new(Node)
 	n.Meta.nodeName = label
 	n.Meta.nodeId = rand.Int()
 	n.Meta.nodeType = "SSH Connection"
 	n.Meta.nodeZone = "us-pacific-est"
-
-	n.Entries.Address = host
-	n.Entries.Port = port
-	n.Entries.userName = user
-	n.Entries.Password = pass
-	nodeCreate(&n.connection)
+	p := strconv.Itoa(port)
+	n.Connection.SSHClientConfig.Host = host+":"+p
+	n.Connection.SSHClientConfig.User = user
+	n.Connection.SSHClientConfig.Password = pass
+	
 	//append node to nodes array
 	
-	m := len(node.Nodes)
+	m := len(rpc.Nodes)
     slice := make(Nodes, (m+1))
    
-    m = copy(slice, node.Nodes)
-    node.Nodes = slice
-    node.Nodes[m] = *n
+    m = copy(slice, rpc.Nodes)
+    rpc.Nodes = slice
+    rpc.Nodes[m] = *n
 	
-	conn := n.connection.Connect()
+	conn := n.Connection.Connect()
 	if conn == nil {
 		err := errors.New("Could not create connection")
 		n.IsConnected = false
@@ -213,12 +206,12 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 		port := r.FormValue("Port")
 		label := r.FormValue("nodeName")
 
-		var node Node
+		node := new(Node)
 		var err error
 		// the node name may dup, rename it till no conflict.
 		for {
 			p, _ := strconv.Atoi(port)
-			node, err = Nd.CreateNode(user, pass, host,p, label)
+			*node, err = Nd.CreateNode(user, pass, host,p, label)
 			if err != nil && strings.Contains(err.Error(), "renaming") {
 				continue
 			}
