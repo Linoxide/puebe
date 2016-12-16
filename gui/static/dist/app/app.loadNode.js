@@ -86,14 +86,11 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Init function for load default value
                 ngOnInit() {
-                    this.loadConnections();
-                    this.loadDefaultConnections();
                     this.loadNode();
                     this.selectedNode = {};
                     this.isValidAddress = false;
                     //Set interval function for loading nodes every 15 seconds
                     setInterval(() => {
-                        this.loadConnections();
                         this.loadNode();
                         //console.log("Refreshing connections");
                     }, 30000);
@@ -229,16 +226,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         //console.log('Connection node loaded')
                     });
                 }
-                loadDefaultConnections() {
-                    this.http.post('/node/connections', '')
-                        .map((res) => res.json())
-                        .subscribe(data => {
-                        //console.log("default connections", data);
-                        this.defaultConnections = data;
-                    }, err => console.log("Error on loading default connection: " + err), () => {
-                        //console.log('Default connections loaded')
-                    });
-                }
                 //Load progress function for Puebe
                 loadProgress() {
                     //Post method executed
@@ -259,15 +246,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 getElapsedTime(ts) {
                     return moment().unix() - ts;
                 }
-                //Show QR code function for show QR popup
-                showQR(node) {
-                    this.QrAddress = node.meta[0].nodeId;
-                    this.QrIsVisible = true;
-                }
-                //Hide QR code function for hide QR popup
-                hideQrPopup() {
-                    this.QrIsVisible = false;
-                }
                 //Show node function for view New node popup
                 showNewNodeDialog() {
                     this.NewNodeIsVisible = true;
@@ -276,42 +254,13 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 hideNodePopup() {
                     this.NewNodeIsVisible = false;
                 }
-                showNewDefaultConnectionDialog() {
-                    this.NewDefaultConnectionIsVisible = true;
-                }
-                hideNewDefaultConnectionDialog() {
-                    this.NewDefaultConnectionIsVisible = false;
-                }
-                showEditDefaultConnectionDialog(item) {
-                    this.oldConnection = item;
-                    this.EditDefaultConnectionIsVisible = true;
-                }
-                hideEditDefaultConnectionDialog() {
-                    this.EditDefaultConnectionIsVisible = false;
-                }
-                createDefaultConnection(connectionValue) {
-                    //console.log("new value", connectionValue);
-                    this.defaultConnections.push(connectionValue);
-                    this.NewDefaultConnectionIsVisible = false;
-                }
-                updateDefaultConnection(connectionValue) {
-                    //console.log("old/new value", this.oldConnection, connectionValue);
-                    var idx = this.defaultConnections.indexOf(this.oldConnection);
-                    this.defaultConnections.splice(idx, 1);
-                    this.defaultConnections.splice(idx, 0, connectionValue);
-                    this.EditDefaultConnectionIsVisible = false;
-                }
-                deleteDefaultConnection(item) {
-                    var idx = this.defaultConnections.indexOf(item);
-                    this.defaultConnections.splice(idx, 1);
-                }
                 //Add new node function for generate new node in Puebe
                 createNewNode(nodename, address, port, user, pass) {
                     var node = {};
-                    node.entries.address = address;
-                    node.entries.Port = port;
-                    node.entries.Password = pass;
-                    node.entries.userName = user;
+                    node.connection.Host = address + ":" + port;
+                    node.connection.Port = port;
+                    node.connection.Password = pass;
+                    node.connection.User = user;
                     node.meta.nodeName = nodename;
                     var stringConvert = JSON.stringify(node);
                     //check if label is duplicated
