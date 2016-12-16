@@ -176,7 +176,7 @@ func (self *NodeRPC) CreateNode(user string, pass string, host string, port int,
 	n.Entries.Port = port
 	n.Entries.userName = user
 	n.Entries.Password = pass
-	nodeCreate(n.connection)
+	nodeCreate(&n.connection)
 	//append node to nodes array
 	
 	m := len(node.Nodes)
