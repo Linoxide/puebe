@@ -6,8 +6,10 @@ import (
 	"log"
 	_ "net/http/pprof"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
 	//"strconv"
 	"sync"
@@ -18,7 +20,6 @@ import (
 	"github.com/Linoxide/puebe/server"
 	_ "github.com/go-sql-driver/mysql"
 	logging "github.com/op/go-logging"
-	"github.com/toqueteos/webbrowser"
 )
 
 var (
@@ -31,6 +32,12 @@ var (
 	}
 	Nd = &gui.NodeRPC{}
 )
+
+var commands = map[string]string{
+	"windows": "start",
+	"darwin":  "open",
+	"linux":   "xdg-open",
+}
 
 const maxThroughPut = 6553600
 
@@ -254,10 +261,10 @@ func Run(c *Config) {
 	if c.WebInterface {
 		var err error
 		if c.WebInterfaceHTTPS {
-			appLoc, _ := filepath.Abs(c.GUIDirectory)//app location
+			appLoc, _ := filepath.Abs(c.GUIDirectory) //app location
 			err = gui.LaunchWebInterfaceHTTPS(host, appLoc, &dconf.Nodes[0].Connection, c.WebInterfaceUser, c.WebInterfacePass)
 		} else {
-			appLoc, _ := filepath.Abs(c.GUIDirectory)//app location
+			appLoc, _ := filepath.Abs(c.GUIDirectory) //app location
 			err = gui.LaunchWebInterface(host, appLoc, &dconf.Nodes[0].Connection)
 		}
 
@@ -273,7 +280,7 @@ func Run(c *Config) {
 				time.Sleep(time.Millisecond * 100)
 
 				fmt.Printf("Launching System Browser with %s", fullAddress)
-				if err := webbrowser.Open(fullAddress); err != nil {
+				if err := OpenBrowser(fullAddress); err != nil {
 					log.Print(fullAddress)
 					log.Print(err.Error())
 				}
@@ -281,13 +288,17 @@ func Run(c *Config) {
 		}
 	}
 
-	fmt.Printf("Shutting down")
-	fmt.Printf("Goodbye")
 	wg.Wait()
 }
 
 func OpenBrowser(url string) error {
-	return webbrowser.Open(url)
+	run, ok := commands[runtime.GOOS]
+	if !ok {
+		return fmt.Errorf("Can't open the browser on %s platform", runtime.GOOS)
+	}
+
+	cmd := exec.Command(run, url)
+	return cmd.Start()
 }
 
 func main() {
