@@ -200,6 +200,7 @@ export class loadNodeComponent implements OnInit {
                 }
             );
     }
+    
     checkValidAddress(address) {
       if(address === "")
         this.isValidAddress = false;
@@ -220,6 +221,7 @@ export class loadNodeComponent implements OnInit {
                 })
       }
     }
+    
     loadNodeItem(name,id, type, zone, inc){
         //Set http headers
         var headers = new Headers();
@@ -277,14 +279,15 @@ export class loadNodeComponent implements OnInit {
                 }
             );
     }
+    
     toggleShowChild(node) {
       node.showChild = !node.showChild;
     }
 
-
     getDateTimeString(ts) {
         return moment.unix(ts).format("YYYY-MM-DD HH:mm")
     }
+    
     getElapsedTime(ts) {
         return moment().unix() - ts;
     }

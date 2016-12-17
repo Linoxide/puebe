@@ -10,7 +10,7 @@
             <li [class.active]="displayMode === displayModeEnum.first">
                 <a (click)="switchTab(displayModeEnum.first, '')" class="ng-binding">
                     <tab-heading class="ng-scope">
-                         Nodes
+                          Connected Nodes
                     </tab-heading>
                 </a>
             </li>
@@ -28,7 +28,7 @@
                       <div class="form-group">
                           <label class="col-sm-2 control-label">Search:</label>
                           <div class="col-sm-6">
-                              <input #historySearchKey placeholder="Filter by Tags and Attributes or Search by Keyword" class="form-control" >
+                              <input #historySearchKey placeholder="Filter by Name, Instance Id, Instance Type or Availability Zone" class="form-control" >
                           </div>
                           <div class="col-sm-4">
                             <button type="submit" class="btn btn-default">Search</button>
@@ -50,11 +50,11 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr *ngFor="#item of connections">
-                            	<td class="text-center">{{item.name}}</td>
-                                <td class="text-center">{{item.id}}</td>
-                                <td class="text-center">{{item.type}}</td>
-                                <td class="text-center">{{item.zone}}</td>
+                            <tr *ngFor="#item of nodes">
+                            	<td class="text-center">{{item.meta.name}}</td>
+                                <td class="text-center">{{item.meta.id}}</td>
+                                <td class="text-center">{{item.meta.type}}</td>
+                                <td class="text-center">{{item.meta.zone}}</td>
                             </tr>
                             </tbody>
                         </table>
