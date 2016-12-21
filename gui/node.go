@@ -213,40 +213,6 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 	}
 }
 
-// Update node label
-func nodeUpdateHandler(gateway *server.SSHClient) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Update node
-		id := r.FormValue("id")
-		if id == "" {
-			Error400(w, "node id is empty")
-			return
-		}
-
-		label := r.FormValue("label")
-		if label == "" {
-			Error400(w, "label is empty")
-			return
-		}
-
-		node := Nd.GetNode(id)
-		if node.Meta.nodeId == 0 {
-			Error404(w, fmt.Sprintf("node of id: %v does not exist", id))
-			return
-		}
-
-		node.Meta.nodeName = label
-		id = strconv.Itoa(node.Meta.nodeId)
-		if err := Nd.SaveNode(id); err != nil {
-			m := "Failed to save node: %v"
-			logger.Critical(m, "Failed to update label of node %v", id)
-			Error500(w, "Update node failed")
-			return
-		}
-
-		SendOr404(w, "success")
-	}
-}
 
 // Returns a node by ID if GET.  Creates or updates a node if POST.
 func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
@@ -267,6 +233,17 @@ func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 	}
 }
 
+
+// Loads/unloads nodes from the node directory
+func nodesReloadHandler(gateway *server.SSHClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := Nd.ReloadNodes()
+		if err != nil {
+			Error500(w, err.(error).Error())
+		}
+	}
+}
+
 // Saves all loaded nodes
 func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -281,23 +258,13 @@ func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
 	}
 }
 
-// Loads/unloads nodes from the node directory
-func nodesReloadHandler(gateway *server.SSHClient) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := Nd.ReloadNodes()
-		if err != nil {
-			Error500(w, err.(error).Error())
-		}
-	}
-}
-
 func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	// Returns node info
 	// GET Arguments:
 	//      id - Node ID.
 
-	//  Gets a node.  Will be assigned name if present.
-	mux.HandleFunc("/node", nodeGet(gateway))
+	//  Gets all node.  Will be assigned name if present.
+	mux.HandleFunc("/node", nodesHandler(gateway))
 
 	// POST/GET Arguments:
 	//		seed [optional]

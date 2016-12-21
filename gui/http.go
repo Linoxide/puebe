@@ -33,7 +33,8 @@ func LaunchWebInterface(host, staticDir string, daemon *server.SSHClient) error 
 	if err != nil {
 		return err
 	}
-
+	
+	
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return err
