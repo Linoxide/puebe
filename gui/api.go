@@ -126,7 +126,7 @@ func RegisterApiHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	//  Generates node puebe addresses
 	// GET/POST
 	//	seed - string - seed hash
-	mux.HandleFunc("/node/create-address", apiCreateAddressHandler(gateway))
+	mux.HandleFunc("/create", apiCreateAddressHandler(gateway))
 }
 
 /**

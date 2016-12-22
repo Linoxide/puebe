@@ -264,22 +264,22 @@ func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	//      id - Node ID.
 
 	//  Gets all node.  Will be assigned name if present.
-	mux.HandleFunc("/node", nodesHandler(gateway))
+	mux.HandleFunc("/", nodesHandler(gateway))
 
 	// POST/GET Arguments:
 	//		seed [optional]
 	//create new node
-	mux.HandleFunc("/node/create", nodeCreate(gateway))
+	mux.HandleFunc("/create", nodeCreate(gateway))
 
 	// Returns all loaded nodes
-	mux.HandleFunc("/node/load", nodesHandler(gateway))
+	mux.HandleFunc("/load", nodesHandler(gateway))
 	// Saves all nodes to disk. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
 
-	mux.HandleFunc("/node/save", nodesSaveHandler(gateway))
+	mux.HandleFunc("/save", nodesSaveHandler(gateway))
 	// Rescans the node directory and loads/unloads nodes based on which
 	// files are present. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
-	mux.HandleFunc("/node/reload", nodesReloadHandler(gateway))
+	mux.HandleFunc("/reload", nodesReloadHandler(gateway))
 
 }

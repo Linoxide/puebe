@@ -31,7 +31,7 @@ func defaultConnectionsHandler(gateway *server.SSHClient) http.HandlerFunc {
 }
 
 func RegisterNetworkHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
-	mux.HandleFunc("/node/connections", connectionHandler(gateway))
-	mux.HandleFunc("/node/connections", connectionsHandler(gateway))
-	mux.HandleFunc("/node/connections", defaultConnectionsHandler(gateway))
+	mux.HandleFunc("/load", connectionHandler(gateway))
+	mux.HandleFunc("/load", connectionsHandler(gateway))
+	mux.HandleFunc("/", defaultConnectionsHandler(gateway))
 }
