@@ -82,7 +82,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.pagerService = pagerService;
                     // pager object
                     this.historyPager = {};
-                    this.blockPager = {};
                 }
                 //Init function for load default value
                 ngOnInit() {
@@ -98,6 +97,8 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.selectedMenu = "Nodes";
                     this.filterAddressVal = '';
                     this.SearchKey = '';
+                    this.NewNodeIsVisible = false;
+                    this.EditNodeIsVisible = false;
                     if (localStorage.getItem('historyUsers') != null) {
                         this.nodes = JSON.parse(localStorage.getItem('historyUsers'));
                     }
@@ -124,7 +125,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Load node function
                 loadNode() {
-                    this.http.post('/nodes', '')
+                    this.http.post('/', '')
                         .map((res) => res.json())
                         .subscribe(data => {
                         if (this.nodes == null || this.nodes.length == 0) {
@@ -175,7 +176,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     else {
                         var headers = new http_2.Headers();
                         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                        this.http.get('/node?addrs=' + address, { headers: headers })
+                        this.http.get('/?Address=' + address, { headers: headers })
                             .map((res) => res.json())
                             .subscribe(
                         //Response from API
@@ -192,7 +193,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.get('/node/?id=' + id, { headers: headers })
+                    this.http.get('/?nodeId=' + id, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(
                     //Response from API
@@ -204,7 +205,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     });
                     //get connection addresses
                     this.nodes[inc].entries.map((entry) => {
-                        this.http.get('/node?address=' + entry.address, { headers: headers })
+                        this.http.get('/?address=' + entry.address, { headers: headers })
                             .map((res) => res.json())
                             .subscribe(
                         //Response from API
@@ -216,35 +217,16 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         });
                     });
                 }
-                loadConnections() {
-                    this.http.post('/node/connections', '')
-                        .map((res) => res.json())
-                        .subscribe(data => {
-                        //console.log("connections", data);
-                        this.connections = data.connections;
-                    }, err => console.log("Error loading connection node: " + err), () => {
-                        //console.log('Connection node loaded')
-                    });
-                }
                 //Load progress function for Puebe
                 loadProgress() {
                     //Post method executed
-                    this.http.post('/node/progress', '')
+                    this.http.post('/', '')
                         .map((res) => res.json())
                         .subscribe(
                     //Response from API
                     response => { this.progress = (parseInt(response.current, 10) + 1) / parseInt(response.highest, 10) * 100; }, err => console.log("Error on loading progress: " + err), () => {
                         //console.log('Progress load done:' + this.progress)
                     });
-                }
-                toggleShowChild(node) {
-                    node.showChild = !node.showChild;
-                }
-                getDateTimeString(ts) {
-                    return moment.unix(ts).format("YYYY-MM-DD HH:mm");
-                }
-                getElapsedTime(ts) {
-                    return moment().unix() - ts;
                 }
                 //Show node function for view New node popup
                 showNewNodeDialog() {
@@ -274,7 +256,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.post('/node/create', stringConvert, { headers: headers })
+                    this.http.post('/create', stringConvert, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(response => {
                         console.log(response);
@@ -287,59 +269,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         console.log(err);
                     }, () => { });
                 }
-                //Edit existing node function
-                editNode(node) {
-                    this.EditNodeIsVisible = true;
-                    this.nodeId = node.meta.nodeName;
-                }
-                addNewAddress(node) {
-                    //Set http headers
-                    var headers = new http_2.Headers();
-                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    //Post method executed
-                    var stringConvert = 'id=' + node.meta.address + node.meta.Port;
-                    this.http.post('/node/newAddress', stringConvert, { headers: headers })
-                        .map((res) => res.json())
-                        .subscribe(response => {
-                        console.log(response);
-                        alert("New address created successfully");
-                        //Load node for refresh list
-                        this.loadNode();
-                    }, err => {
-                        console.log(err);
-                    }, () => { });
-                }
                 //Hide edit node function
                 hideEditNodePopup() {
                     this.EditNodeIsVisible = false;
-                }
-                //Update node function for update node label
-                updateNode(nodeId, nodeName) {
-                    console.log("update node", nodeId, nodeName);
-                    //check if label is duplicated
-                    var old = _.find(this.nodes, function (o) {
-                        return (o.meta.label == nodeName);
-                    });
-                    if (old) {
-                        alert("This node label is used already");
-                        return;
-                    }
-                    //Set http headers
-                    var headers = new http_2.Headers();
-                    headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    var stringConvert = 'label=' + nodeName + 'id=' + nodeId;
-                    //Post method executed
-                    this.http.post('/node/update', stringConvert, { headers: headers })
-                        .map((res) => res.json())
-                        .subscribe(response => {
-                        //Hide new node popup
-                        this.EditNodeIsVisible = false;
-                        alert("Node updated successfully");
-                        //Load node for refresh list
-                        this.loadNode();
-                    }, err => console.log("Error on update node: " + JSON.stringify(err)), () => {
-                        //console.log('Update node done')
-                    });
                 }
                 sortHistory(key) {
                     if (this.sortDir[key] == 0)
@@ -349,22 +281,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.historyTable = _.sortBy(this.historyTable, function (o) {
                         return o[key];
                     });
-                }
-                filterHistory(address) {
-                    console.log("filterHistory", address);
-                    this.filterAddressVal = address;
-                }
-                setHistoryPage(page) {
-                    this.historyPager.totalPages = this.historyTable.length;
-                    if (page < 1 || page > this.historyPager.totalPages) {
-                        return;
-                    }
-                    // get pager object from service
-                    this.historyPager = this.pagerService.getPager(this.historyTable.length, page);
-                    console.log("this.historyPager", this.historyPager);
-                    // get current page of items
-                    this.historyPagedItems = this.historyTable.slice(this.historyPager.startIndex, this.historyPager.endIndex + 1);
-                    //console.log('this.pagedItems', this.historyTable, this.pagedItems);
                 }
                 searchHistory(searchKey) {
                     console.log(searchKey);
