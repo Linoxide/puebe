@@ -93,7 +93,7 @@ func (c *Config) register() {
 			"If not provided, will use User name in -data-directory")
 	flag.StringVar(&c.WebInterfacePass, "web-interface-key",
 		c.WebInterfacePass, "Password for web interface HTTPS. "+
-			"If not provided, will use key.pem in -data-directory")
+			"If not provided, will use password in -data-directory")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https",
 		c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser,
