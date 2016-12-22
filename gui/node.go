@@ -264,7 +264,7 @@ func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	//      id - Node ID.
 
 	//  Gets all node.  Will be assigned name if present.
-	mux.HandleFunc("/", nodesHandler(gateway))
+	mux.HandleFunc("/node", nodesHandler(gateway))
 
 	// POST/GET Arguments:
 	//		seed [optional]
