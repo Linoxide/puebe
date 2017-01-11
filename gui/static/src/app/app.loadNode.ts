@@ -6,7 +6,6 @@ import {Observable} from 'rxjs/Observable';
 import {Observer} from 'rxjs/Observer';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
-import {QRCodeComponent} from './ng2-qrcode.ts';
 
 declare var _: any;
 declare var $: any;
@@ -61,7 +60,7 @@ export class PagerService {
 
 @Component({
     selector: 'load-node',
-    directives: [ROUTER_DIRECTIVES, QRCodeComponent],
+    directives: [ROUTER_DIRECTIVES],
     providers: [PagerService],
     templateUrl: 'app/templates/node.html'
 })
@@ -78,7 +77,6 @@ export class loadNodeComponent implements OnInit {
     selectedMenu: string;
 
     NewNodeIsVisible: boolean;
-    EditNodeIsVisible: boolean;
 
     historyTable: Array<any>;
     filterAddressVal:string;
@@ -99,7 +97,7 @@ export class loadNodeComponent implements OnInit {
     ngOnInit() {
         this.loadNode();
         this.selectedNode = {};
-       
+       	this.NewNodeIsVisible = false;
         this.isValidAddress = false;
 
         //Set interval function for loading nodes every 15 seconds
@@ -113,8 +111,6 @@ export class loadNodeComponent implements OnInit {
         this.selectedMenu = "Connected Nodes";
         this.filterAddressVal = '';
         this.SearchKey = '';
-        this.NewNodeIsVisible = false;
-        this.EditNodeIsVisible = false;
 
         if(localStorage.getItem('historyUsers') != null){
             this.nodes = JSON.parse(localStorage.getItem('historyUsers'));
@@ -266,6 +262,8 @@ export class loadNodeComponent implements OnInit {
     //Show node function for view New node popup
     showNewNodeDialog(){
         this.NewNodeIsVisible = true;
+        var popup = document.getElementById('myModal');
+    	popup.classList.toggle('show');
     }
 
     //Hide node function for hide New node popup
@@ -315,11 +313,6 @@ export class loadNodeComponent implements OnInit {
                 () => {}
             );
           
-    }
-  
-    //Hide edit node function
-    hideEditNodePopup(){
-        this.EditNodeIsVisible = false;
     }
 
     sortHistory(key) {

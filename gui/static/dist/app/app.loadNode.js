@@ -231,6 +231,8 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 //Show node function for view New node popup
                 showNewNodeDialog() {
                     this.NewNodeIsVisible = true;
+                    var popup = document.getElementById('myModal');
+                    popup.classList.toggle('show');
                 }
                 //Hide node function for hide New node popup
                 hideNodePopup() {
@@ -268,10 +270,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     }, err => {
                         console.log(err);
                     }, () => { });
-                }
-                //Hide edit node function
-                hideEditNodePopup() {
-                    this.EditNodeIsVisible = false;
                 }
                 sortHistory(key) {
                     if (this.sortDir[key] == 0)
