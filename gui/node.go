@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -142,6 +141,11 @@ func (self *NodeRPC) SaveNodes() []error {
 
 func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, label string) (Node, error) {
 
+	if rpc == nil {
+		*rpc = NodeRPC{}
+		rpc.InitNodeRPC("./puebe")
+	}
+	
 	n := new(Node)
 	n.Meta.nodeName = label
 	n.Meta.nodeId = rand.Int()
@@ -153,11 +157,10 @@ func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, 
 	n.Connection.SSHClientConfig.Password = pass
 
 	//append node to nodes array
-	m := len(rpc.Nodes)
-	slice := make(Nodes, (m + 1))
-	m = copy(slice, rpc.Nodes)
-	rpc.Nodes = slice
-	rpc.Nodes[m] = *n
+	slice := make(Nodes, len(rpc.Nodes))
+	copy(slice, rpc.Nodes)
+	slice = append(slice, *n)
+	copy(rpc.Nodes, slice)
 
 	conn := n.Connection.Connect()
 	if conn == nil {
@@ -186,17 +189,20 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 		port := r.FormValue("port")
 		label := r.FormValue("name")
 
-		node := new(Node)
-		var err error
 		// the node name may dup, rename it till no conflict.
-		for {
-			p, _ := strconv.Atoi(port)
-			*node, err = Nd.CreateNode(user, pass, host, p, label)
-			if err != nil && strings.Contains(err.Error(), "renaming") {
-				continue
-			}
-			break
+		p, e := strconv.Atoi(port)
+		if e != nil {
+			Error400(w, e.Error())
+			return
 		}
+		
+		node, err := Nd.CreateNode(user, pass, host, p, label)
+		if err != nil {
+			Error400(w, err.Error())
+			fmt.printf("%v", node)
+			return
+		}
+
 		id := strconv.Itoa(node.Meta.nodeId)
 		if err := Nd.SaveNode(id); err != nil {
 			Error400(w, err.Error())
