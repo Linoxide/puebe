@@ -1,4 +1,4 @@
-System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/operator/map', 'rxjs/add/operator/catch', './ng2-qrcode.js'], function(exports_1, context_1) {
+System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/operator/map', 'rxjs/add/operator/catch'], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -10,7 +10,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var core_1, router_1, http_1, http_2, ng2_qrcode_ts_1;
+    var core_1, router_1, http_1, http_2;
     var PagerService, loadNodeComponent;
     return {
         setters:[
@@ -25,10 +25,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 http_2 = http_1_1;
             },
             function (_1) {},
-            function (_2) {},
-            function (ng2_qrcode_ts_1_1) {
-                ng2_qrcode_ts_1 = ng2_qrcode_ts_1_1;
-            }],
+            function (_2) {}],
         execute: function() {
             class PagerService {
                 getPager(totalItems, currentPage = 1, pageSize = 5) {
@@ -87,6 +84,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 ngOnInit() {
                     this.loadNode();
                     this.selectedNode = {};
+                    this.NewNodeIsVisible = false;
                     this.isValidAddress = false;
                     //Set interval function for loading nodes every 15 seconds
                     setInterval(() => {
@@ -97,8 +95,6 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     this.selectedMenu = "Connected Nodes";
                     this.filterAddressVal = '';
                     this.SearchKey = '';
-                    this.NewNodeIsVisible = false;
-                    this.EditNodeIsVisible = false;
                     if (localStorage.getItem('historyUsers') != null) {
                         this.nodes = JSON.parse(localStorage.getItem('historyUsers'));
                     }
@@ -295,7 +291,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
             loadNodeComponent = __decorate([
                 core_1.Component({
                     selector: 'load-node',
-                    directives: [router_1.ROUTER_DIRECTIVES, ng2_qrcode_ts_1.QRCodeComponent],
+                    directives: [router_1.ROUTER_DIRECTIVES],
                     providers: [PagerService],
                     templateUrl: 'app/templates/node.html'
                 }), 
