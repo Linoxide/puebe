@@ -3,8 +3,6 @@ package gui
 import (
 	"time"
 	
-	"github.com/Linoxide/puebe/server"
-	
 )
 
 // Exposes a read-only api for use by the gui node rpc interface
