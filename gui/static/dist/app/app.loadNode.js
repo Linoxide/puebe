@@ -94,7 +94,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         //console.log("Refreshing connections");
                     }, 30000);
                     //Enable button by default
-                    this.selectedMenu = "Nodes";
+                    this.selectedMenu = "Connected Nodes";
                     this.filterAddressVal = '';
                     this.SearchKey = '';
                     this.NewNodeIsVisible = false;
@@ -134,17 +134,17 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                             });
                             this.nodes = data;
                             if (this.nodes.length > 0) {
-                                this.onSelectNode(this.nodes[0].meta.nodeId);
+                                this.onSelectNode(this.nodes[0].Meta.nodeId);
                             }
                         }
                         else {
                             data.map((w) => {
                                 var old = _.find(this.nodes, (o) => {
-                                    o.meta.nodeType == w.meta.nodeType;
-                                    o.meta.nodeName == w.meta.nodeName;
-                                    o.meta.nodeZone == w.meta.nodeZone;
-                                    o.meta.nodeId == w.meta.nodeId;
-                                    return o.meta.nodeId;
+                                    o.Meta.nodeType == w.Meta.nodeType;
+                                    o.Meta.nodeName == w.Meta.nodeName;
+                                    o.Meta.nodeZone == w.Meta.nodeZone;
+                                    o.Meta.nodeId == w.Meta.nodeId;
+                                    return o.Meta.nodeId;
                                 });
                                 if (old) {
                                     _.extend(old, w);
@@ -159,10 +159,10 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         //Load data for each nodeBalance for each node
                         var inc;
                         for (var item in data) {
-                            var name = data[inc].meta.nodeName;
-                            var id = data[inc].meta.nodeId;
-                            var type = data[inc].meta.nodeType;
-                            var zone = data[inc].meta.nodezone;
+                            var name = data[inc].Meta.nodeName;
+                            var id = data[inc].Meta.nodeId;
+                            var type = data[inc].Meta.nodeType;
+                            var zone = data[inc].Meta.nodezone;
                             this.loadNodeItem(name, id, type, zone, inc);
                             inc;
                         }
@@ -199,7 +199,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //Response from API
                     response => {
                         //console.log('load done: ' + inc, response);
-                        this.nodes[inc].connection = response.confirmed.connection;
+                        this.nodes[inc].Connection = response.confirmed.Connection;
                     }, err => console.log("Error on adding new node " + err), () => {
                         //console.log('New node added.')
                     });
@@ -211,7 +211,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         //Response from API
                         response => {
                             //console.log('Address:' + entry.address, response);
-                            entry.connection = response.confirmed.connection;
+                            entry.Connection = response.confirmed.Connection;
                         }, err => console.log("Error on loading connection address: " + err), () => {
                             //console.log('connection address loaded')
                         });
@@ -239,15 +239,15 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 //Add new node function for generate new node in Puebe
                 createNewNode(nodename, address, port, user, pass) {
                     var node = {};
-                    node.connection.Host = address + ":" + port;
-                    node.connection.Port = port;
-                    node.connection.Password = pass;
-                    node.connection.User = user;
-                    node.meta.nodeName = nodename;
+                    node.Connection.Host = address + ":" + port;
+                    node.Connection.Port = port;
+                    node.Connection.Password = pass;
+                    node.Connection.User = user;
+                    node.Meta.nodeName = nodename;
                     var stringConvert = JSON.stringify(node);
                     //check if label is duplicated
                     var old = _.find(this.nodes, function (o) {
-                        return (o.meta.nodeName == nodename);
+                        return (o.Meta.nodeName == nodename);
                     });
                     if (old) {
                         alert("This node label is used already");
@@ -290,7 +290,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //this.selectedNode = val;
                     this.nodeId = val;
                     this.selectedNode = _.find(this.nodes, function (o) {
-                        return o.meta.nodeId === val;
+                        return o.Meta.nodeId === val;
                     });
                 }
             };
