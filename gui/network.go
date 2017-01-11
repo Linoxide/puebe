@@ -3,35 +3,25 @@ package gui
 
 import (
 	"net/http"
-
-	"github.com/Linoxide/puebe/server"
 )
 
-func connectionHandler(gateway *server.SSHClient) http.HandlerFunc {
+func connectionHandler(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if addr := r.FormValue("addr"); addr == "" {
 			Error404(w)
 		} else {
-			gateway.SSHClientConfig.Host = addr
-			SendOr404(w, gateway.Connect())
+			SendOr404(w, gateway.GetNode(addr))
 		}
 	}
 }
 
-func connectionsHandler(gateway *server.SSHClient) http.HandlerFunc {
+func connectionsHandler(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.Connect())
+		SendOr404(w, gateway.GetNodes())
 	}
 }
 
-func defaultConnectionsHandler(gateway *server.SSHClient) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		SendOr404(w, gateway.Connect())
-	}
-}
-
-func RegisterNetworkHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
+func RegisterNetworkHandlers(mux *http.ServeMux, gateway *Gateway) {
 	mux.HandleFunc("/load", connectionHandler(gateway))
 	mux.HandleFunc("/load", connectionsHandler(gateway))
-	mux.HandleFunc("/", defaultConnectionsHandler(gateway))
 }

@@ -153,16 +153,11 @@ func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, 
 	n.Connection.SSHClientConfig.Password = pass
 
 	//append node to nodes array
-
 	m := len(rpc.Nodes)
-	if m > 0 {
-		slice := make(Nodes, (m + 1))
-		m = copy(slice, rpc.Nodes)
-		rpc.Nodes = slice
-		rpc.Nodes[m] = *n
-	} else {
-		rpc.Nodes[0] = *n
-	}
+	slice := make(Nodes, (m + 1))
+	m = copy(slice, rpc.Nodes)
+	rpc.Nodes = slice
+	rpc.Nodes[m] = *n
 
 	conn := n.Connection.Connect()
 	if conn == nil {
@@ -191,8 +186,6 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 		port := r.FormValue("port")
 		label := r.FormValue("name")
 
-		//logger.Info("user: %s, pass: %s, addr: %s, port: %d, name: %s", user, pass, host, port, label)
-
 		node := new(Node)
 		var err error
 		// the node name may dup, rename it till no conflict.
@@ -211,7 +204,6 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 		}
 
 		rlt := node
-		logger.Info(".............................")
 		SendOr500(w, rlt)
 	}
 }
