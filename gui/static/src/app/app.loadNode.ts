@@ -144,7 +144,7 @@ export class loadNodeComponent implements OnInit {
         //Set interval function for load node every 15 seconds
         setInterval(() => {
             this.loadNode();
-            //console.log("Refreshing balance");
+            //console.log("Refreshing nodes");
         }, 30000);
         setInterval(() => {
             this.loadConnections();
@@ -513,29 +513,12 @@ export class loadNodeComponent implements OnInit {
     }
     //Add new node function for generate new node in Skycoin
     createNewNode(nodename, address, port, user, pass){
-    	var node: any = {};
-		node.Connection.Host = address +":"+port;
-		node.Connection.Port = port;
-		node.Connection.Password = pass;
-		node.Connection.User = user;
-		node.Meta.nodeName = nodename
-		var stringConvert = JSON.stringify(node);
-		
-        //check if label is duplicated
-        var old = _.find(this.nodes, function(o){
-          return (o.Meta.nodeName == nodename)
-        })
-
-        if(old) {
-          alert("This node label is used already");
-          return;
-        }
-
-        //Set http headers
+    	//Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
+        var stringConvert = 'name='+nodename+'&address='+address+'&port='+port+'&user='+user+'&pass='+pass';
 		
-        this.http.post('/create', stringConvert, {headers: headers})
+        this.http.post('node/create', stringConvert, {headers: headers})
             .map((res:Response) => res.json())
             .subscribe(
                 response => {
@@ -552,7 +535,6 @@ export class loadNodeComponent implements OnInit {
                 },
                 () => {}
             );
-          
     }
 
     addNewAddress(node) {
@@ -574,7 +556,9 @@ export class loadNodeComponent implements OnInit {
               err => {
                 console.log(err);
               },
-              () => {}
+              () => { 
+              	 console.log('New node added.')
+              }
           );
     }
 
