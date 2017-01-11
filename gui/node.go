@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	//"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Linoxide/puebe/server"
 )
 
 type Nodes []Node
@@ -182,14 +180,14 @@ func (self *NodeRPC) GetNode(nodeID string) Node {
 }
 
 // Create a node Name is set by creation date
-func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
+func nodeCreate(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("API request made to Add a node")
-		user := r.FormValue("userName")
-		pass := r.FormValue("Password")
-		host := r.FormValue("Address")
-		port := r.FormValue("Port")
-		label := r.FormValue("nodeName")
+		user := r.FormValue("user")
+		pass := r.FormValue("pass")
+		host := r.FormValue("address")
+		port := r.FormValue("port")
+		label := r.FormValue("name")
 
 		node := new(Node)
 		var err error
@@ -215,7 +213,7 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 
 
 // Returns a node by ID if GET.  Creates or updates a node if POST.
-func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
+func nodeGet(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			ret := Nd.GetNode(r.FormValue("id"))
@@ -225,7 +223,7 @@ func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
 }
 
 // Returns nodes
-func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
+func nodesHandler(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ret := Nd.ReloadNodes()
@@ -235,7 +233,7 @@ func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 
 
 // Loads/unloads nodes from the node directory
-func nodesReloadHandler(gateway *server.SSHClient) http.HandlerFunc {
+func nodesReloadHandler(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := Nd.ReloadNodes()
 		if err != nil {
@@ -245,7 +243,7 @@ func nodesReloadHandler(gateway *server.SSHClient) http.HandlerFunc {
 }
 
 // Saves all loaded nodes
-func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
+func nodesSaveHandler(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		errs := Nd.SaveNodes()
 		if len(errs) != 0 {
@@ -258,7 +256,7 @@ func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
 	}
 }
 
-func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
+func RegisterNodeHandlers(mux *http.ServeMux, gateway *Gateway) {
 	// Returns node info
 	// GET Arguments:
 	//      id - Node ID.
@@ -267,19 +265,19 @@ func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	mux.HandleFunc("/node", nodesHandler(gateway))
 
 	// POST/GET Arguments:
-	//		seed [optional]
+	//		SSH args
 	//create new node
-	mux.HandleFunc("/create", nodeCreate(gateway))
+	mux.HandleFunc("/node/create", nodeCreate(gateway))
 
 	// Returns all loaded nodes
-	mux.HandleFunc("/load", nodesHandler(gateway))
+	mux.HandleFunc("/node/load", nodesHandler(gateway))
 	// Saves all nodes to disk. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
 
-	mux.HandleFunc("/save", nodesSaveHandler(gateway))
+	mux.HandleFunc("/node/save", nodesSaveHandler(gateway))
 	// Rescans the node directory and loads/unloads nodes based on which
 	// files are present. Returns nothing if it works. Otherwise returns
 	// 500 status with error message.
-	mux.HandleFunc("/reload", nodesReloadHandler(gateway))
+	mux.HandleFunc("/node/reload", nodesReloadHandler(gateway))
 
 }
