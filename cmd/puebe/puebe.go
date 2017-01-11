@@ -257,7 +257,7 @@ func Run(c *Config) {
 	} else {
 		log.Print("Could not create new ssh session")
 	}
-	
+
 	//create a new gateway
 	m := gui.NewGatewayConfig()
 	d := gui.NewGateway(m, Nd)

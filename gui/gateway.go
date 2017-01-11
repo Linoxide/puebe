@@ -2,7 +2,6 @@ package gui
 
 import (
 	"time"
-	
 )
 
 // Exposes a read-only api for use by the gui node rpc interface
@@ -26,7 +25,7 @@ type Gateway struct {
 
 	// Backref to Daemon
 	D *NodeRPC
-	
+
 	// Requests are queued on this channel
 	Requests chan func()
 	// When a request is done processing, it is placed on this channel
@@ -42,7 +41,6 @@ func NewGateway(c GatewayConfig, D *NodeRPC) *Gateway {
 		Requests: make(chan func(), c.BufferSize),
 	}
 }
-
 
 // Get all connections to addresses
 func (gw *Gateway) GetNodes() interface{} {
@@ -61,7 +59,6 @@ func (gw *Gateway) GetNode(id string) interface{} {
 	}
 	return <-conn
 }
-
 
 // GetTimeNow returns the current Unix time
 func (gw *Gateway) GetTimeNow() uint64 {

@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 )
 
 type Nodes []Node
@@ -156,11 +155,14 @@ func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, 
 	//append node to nodes array
 
 	m := len(rpc.Nodes)
-	slice := make(Nodes, (m + 1))
-
-	m = copy(slice, rpc.Nodes)
-	rpc.Nodes = slice
-	rpc.Nodes[m] = *n
+	if m > 0 {
+		slice := make(Nodes, (m + 1))
+		m = copy(slice, rpc.Nodes)
+		rpc.Nodes = slice
+		rpc.Nodes[m] = *n
+	} else {
+		rpc.Nodes[0] = *n
+	}
 
 	conn := n.Connection.Connect()
 	if conn == nil {
@@ -189,6 +191,8 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 		port := r.FormValue("port")
 		label := r.FormValue("name")
 
+		//logger.Info("user: %s, pass: %s, addr: %s, port: %d, name: %s", user, pass, host, port, label)
+
 		node := new(Node)
 		var err error
 		// the node name may dup, rename it till no conflict.
@@ -211,7 +215,6 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 	}
 }
 
-
 // Returns a node by ID if GET.  Creates or updates a node if POST.
 func nodeGet(gateway *Gateway) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -230,7 +233,6 @@ func nodesHandler(gateway *Gateway) http.HandlerFunc {
 		SendOr404(w, ret)
 	}
 }
-
 
 // Loads/unloads nodes from the node directory
 func nodesReloadHandler(gateway *Gateway) http.HandlerFunc {

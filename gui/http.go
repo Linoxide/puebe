@@ -32,8 +32,7 @@ func LaunchWebInterface(host, staticDir string, daemon *Gateway) error {
 	if err != nil {
 		return err
 	}
-	
-	
+
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		return err
