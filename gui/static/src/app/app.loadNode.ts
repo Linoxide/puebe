@@ -516,7 +516,7 @@ export class loadNodeComponent implements OnInit {
     	//Set http headers
         var headers = new Headers();
         headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        var stringConvert = 'name='+nodename+'&address='+address+'&port='+port+'&user='+user+'&pass='+pass';
+        var stringConvert = 'name='+nodename+'&address='+address+'&port='+port+'&user='+user+'&pass='+pass;
 		
         this.http.post('node/create', stringConvert, {headers: headers})
             .map((res:Response) => res.json())

@@ -104,7 +104,7 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                     //Set interval function for load node every 15 seconds
                     setInterval(() => {
                         this.loadNode();
-                        //console.log("Refreshing balance");
+                        //console.log("Refreshing nodes");
                     }, 30000);
                     setInterval(() => {
                         this.loadConnections();
@@ -444,25 +444,11 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                 }
                 //Add new node function for generate new node in Skycoin
                 createNewNode(nodename, address, port, user, pass) {
-                    var node = {};
-                    node.Connection.Host = address + ":" + port;
-                    node.Connection.Port = port;
-                    node.Connection.Password = pass;
-                    node.Connection.User = user;
-                    node.Meta.nodeName = nodename;
-                    var stringConvert = JSON.stringify(node);
-                    //check if label is duplicated
-                    var old = _.find(this.nodes, function (o) {
-                        return (o.Meta.nodeName == nodename);
-                    });
-                    if (old) {
-                        alert("This node label is used already");
-                        return;
-                    }
                     //Set http headers
                     var headers = new http_2.Headers();
                     headers.append('Content-Type', 'application/x-www-form-urlencoded');
-                    this.http.post('/create', stringConvert, { headers: headers })
+                    var stringConvert = 'name=' + nodename + '&address=' + address + '&port=' + port + '&user=' + user + '&pass=' + pass;
+                    this.http.post('node/create', stringConvert, { headers: headers })
                         .map((res) => res.json())
                         .subscribe(response => {
                         console.log(response);
@@ -490,7 +476,9 @@ System.register(['angular2/core', 'angular2/router', 'angular2/http', 'rxjs/add/
                         this.loadNode();
                     }, err => {
                         console.log(err);
-                    }, () => { });
+                    }, () => {
+                        console.log('New node added.');
+                    });
                 }
                 //Load node seed function
                 openLoadNode(nodeName, seed) {
