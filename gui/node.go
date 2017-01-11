@@ -211,6 +211,7 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 		}
 
 		rlt := node
+		logger.Info(".............................")
 		SendOr500(w, rlt)
 	}
 }
