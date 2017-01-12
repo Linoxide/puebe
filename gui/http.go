@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/Linoxide/puebe/server"
 	logging "github.com/op/go-logging"
 )
 
@@ -23,7 +24,7 @@ const (
 
 // Begins listening on http://$host, for enabling remote web access
 // Does NOT use HTTPS
-func LaunchWebInterface(host, staticDir string, daemon *Gateway) error {
+func LaunchWebInterface(host, staticDir string, daemon *server.SSHClient) error {
 	logger.Info("Starting web interface on http://%s", host)
 	logger.Warning("HTTPS not in use!")
 	logger.Info("Web resources directory: %s", staticDir)
@@ -45,7 +46,7 @@ func LaunchWebInterface(host, staticDir string, daemon *Gateway) error {
 
 // Begins listening on https://$host, for enabling remote web access
 // Uses HTTPS
-func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *Gateway, userName, Password string) error {
+func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *server.SSHClient, userName, Password string) error {
 	logger.Info("Starting web interface on https://%s", host)
 	logger.Info("Using %s for the default user name", userName)
 	logger.Info("Using %s for the default password", Password)
@@ -61,6 +62,8 @@ func LaunchWebInterfaceHTTPS(host, staticDir string, daemon *Gateway, userName, 
 		return err
 	}
 
+	daemon.SSHClientConfig.User = userName
+ 	daemon.SSHClientConfig.Password = Password
 	// Runs http.Serve() in a goroutine
 	serve(listener, NewGUIMux(appLoc, daemon))
 
@@ -82,7 +85,7 @@ func serve(listener net.Listener, mux *http.ServeMux) {
 }
 
 // Creates an http.ServeMux with handlers registered
-func NewGUIMux(appLoc string, daemon *Gateway) *http.ServeMux {
+func NewGUIMux(appLoc string, daemon *server.SSHClient) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", newIndexHandler(appLoc))
 

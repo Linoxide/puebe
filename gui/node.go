@@ -11,6 +11,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+	
+	"github.com/Linoxide/puebe/server"
 )
 
 type Nodes []Node
@@ -140,11 +142,6 @@ func (self *NodeRPC) SaveNodes() []error {
 }
 
 func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, label string) (Node, error) {
-
-	if rpc == nil {
-		*rpc = NodeRPC{}
-		rpc.InitNodeRPC("./puebe")
-	}
 	
 	n := new(Node)
 	n.Meta.nodeName = label
@@ -157,9 +154,15 @@ func (rpc *NodeRPC) CreateNode(user string, pass string, host string, port int, 
 	n.Connection.SSHClientConfig.Password = pass
 
 	//append node to nodes array
-	slice := make(Nodes, len(rpc.Nodes))
-	copy(slice, rpc.Nodes)
-	slice = append(slice, *n)
+	slice := make(Nodes, len(rpc.Nodes) + 1)
+	if len(slice) > 1 {
+		copy(slice, rpc.Nodes)
+		slice = append(slice, *n)
+	} else {
+		slice = append(slice, *n)
+	}
+	
+	rpc.Nodes = make(Nodes, len(slice))
 	copy(rpc.Nodes, slice)
 
 	conn := n.Connection.Connect()
@@ -180,7 +183,7 @@ func (self *NodeRPC) GetNode(nodeID string) Node {
 }
 
 // Create a node Name is set by creation date
-func nodeCreate(gateway *Gateway) http.HandlerFunc {
+func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("API request made to Add a node")
 		user := r.FormValue("user")
@@ -193,13 +196,12 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 		p, e := strconv.Atoi(port)
 		if e != nil {
 			Error400(w, e.Error())
-			return
 		}
 		
 		node, err := Nd.CreateNode(user, pass, host, p, label)
 		if err != nil {
 			Error400(w, err.Error())
-			fmt.printf("%v", node)
+			fmt.Printf("%v", node)
 			return
 		}
 
@@ -215,7 +217,7 @@ func nodeCreate(gateway *Gateway) http.HandlerFunc {
 }
 
 // Returns a node by ID if GET.  Creates or updates a node if POST.
-func nodeGet(gateway *Gateway) http.HandlerFunc {
+func nodeGet(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			ret := Nd.GetNode(r.FormValue("id"))
@@ -225,16 +227,15 @@ func nodeGet(gateway *Gateway) http.HandlerFunc {
 }
 
 // Returns nodes
-func nodesHandler(gateway *Gateway) http.HandlerFunc {
+func nodesHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		ret := Nd.ReloadNodes()
 		SendOr404(w, ret)
 	}
 }
 
 // Loads/unloads nodes from the node directory
-func nodesReloadHandler(gateway *Gateway) http.HandlerFunc {
+func nodesReloadHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := Nd.ReloadNodes()
 		if err != nil {
@@ -244,7 +245,7 @@ func nodesReloadHandler(gateway *Gateway) http.HandlerFunc {
 }
 
 // Saves all loaded nodes
-func nodesSaveHandler(gateway *Gateway) http.HandlerFunc {
+func nodesSaveHandler(gateway *server.SSHClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		errs := Nd.SaveNodes()
 		if len(errs) != 0 {
@@ -257,7 +258,7 @@ func nodesSaveHandler(gateway *Gateway) http.HandlerFunc {
 	}
 }
 
-func RegisterNodeHandlers(mux *http.ServeMux, gateway *Gateway) {
+func RegisterNodeHandlers(mux *http.ServeMux, gateway *server.SSHClient) {
 	// Returns node info
 	// GET Arguments:
 	//      id - Node ID.

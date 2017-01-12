@@ -258,18 +258,14 @@ func Run(c *Config) {
 		log.Print("Could not create new ssh session")
 	}
 
-	//create a new gateway
-	m := gui.NewGatewayConfig()
-	d := gui.NewGateway(m, Nd)
-
 	if c.WebInterface {
 		var err error
 		if c.WebInterfaceHTTPS {
 			appLoc, _ := filepath.Abs(c.GUIDirectory) //app location
-			err = gui.LaunchWebInterfaceHTTPS(host, appLoc, d, c.WebInterfaceUser, c.WebInterfacePass)
+			err = gui.LaunchWebInterfaceHTTPS(host, appLoc, &dconf.Nodes[0].Connection, c.WebInterfaceUser, c.WebInterfacePass)
 		} else {
 			appLoc, _ := filepath.Abs(c.GUIDirectory) //app location
-			err = gui.LaunchWebInterface(host, appLoc, d)
+			err = gui.LaunchWebInterface(host, appLoc, &dconf.Nodes[0].Connection)
 		}
 
 		if err != nil {
