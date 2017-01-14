@@ -197,7 +197,6 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 			Nd.InitNodeRPC("./puebe")
 		}
 		
-
 		// the node name may dup, rename it till no conflict.
 		p, e := strconv.Atoi(port)
 		if e != nil {
