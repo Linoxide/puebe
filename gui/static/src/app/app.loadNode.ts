@@ -68,7 +68,7 @@ export class PagerService {
 })
 
 export class loadNodeComponent implements OnInit {
-    //Declare default varialbes
+    //Declare default variables
     nodes : Array<any>;
     nodesWithAddress : Array<any>;
     progress: any;
@@ -133,11 +133,8 @@ export class loadNodeComponent implements OnInit {
         this.loadNode();
         this.loadConnections();
         this.loadDefaultConnections();
-        this.loadBlockChain();
-        this.loadNumberOfBlocks();
         this.loadProgress();
         this.loadOutputs();
-        this.loadTransactions();
         this.isValidAddress = false;
         this.blockViewMode = 'recentBlocks'
 
@@ -148,8 +145,6 @@ export class loadNodeComponent implements OnInit {
         }, 30000);
         setInterval(() => {
             this.loadConnections();
-            this.loadBlockChain();
-            this.loadNumberOfBlocks();
             //console.log("Refreshing connections");
         }, 15000);
 
@@ -199,16 +194,6 @@ export class loadNodeComponent implements OnInit {
         this.sendDisable = false;
     }
 
-    loadNumberOfBlocks(){
-        this.numberOfBlocks=0;
-        this.http.get('/blockchain/metadata')
-            .map((res:Response)=>res.json())
-            .subscribe(
-                data=>{
-                    this.numberOfBlocks = data.head.seq;
-                }
-            )
-    }
 
     //Load node function
     loadNode(){
@@ -325,63 +310,9 @@ export class loadNodeComponent implements OnInit {
               //console.log('Connection load done')
             });
     }
-    loadTransactions() {
-        this.historyTable = [];
-        this.http.get('/lastTxs', {})
-            .map((res) => res.json())
-            .subscribe(data => {
-                console.log("transactions", data);
-                this.historyTable = this.historyTable.concat(data);
-                this.setHistoryPage(1);
-            }, err => console.log("Error on load transactions: " + err), () => {
-              //console.log('Connection load done')
-            });
-        this.http.get('/pendingTxs', {})
-            .map((res) => res.json())
-            .subscribe(data => {
-                console.log("pending transactions", data);
-                this.historyTable = this.historyTable.concat(data);
-                this.setHistoryPage(1);
-            }, err => console.log("Error on pending transactions: " + err), () => {
-
-            });
-    }
-    GetTransactionAmount(transaction) {
-      var ret = 0;
-      _.each(transaction.txn.outputs, function(o){
-        ret += Number(o.coins);
-      })
-
-      return ret;
-    }
-    GetTransactionAmount2(transaction) {
-      var ret = 0;
-      _.each(transaction.outputs, function(o){
-        ret += Number(o.coins);
-      })
-
-      return ret;
-    }
-    GetBlockAmount(block) {
-      var ret = [];
-      _.each(block.body.txns, function(o){
-        _.each(o.outputs, function(_o){
-          ret.push(_o.coins);
-        })
-      })
-
-      return ret.join(",");
-    }
-    GetBlockTotalAmount(block) {
-      var ret = 0;
-      _.each(block.body.txns, function(o){
-        _.each(o.outputs, function(_o){
-          ret += Number(_o.coins);
-        })
-      })
-
-      return ret;
-    }
+   
+    
+  
     loadDefaultConnections() {
         this.http.post('/network/defaultConnections', '')
             .map((res) => res.json())
@@ -406,21 +337,7 @@ export class loadNodeComponent implements OnInit {
               //console.log('Connection load done')
             });
     }
-    loadBlockChain() {
-        var headers = new Headers();
-        headers.append('Content-Type', 'application/x-www-form-urlencoded');
-        this.http.get('/last_blocks?num=10', { headers: headers })
-            .map((res) => res.json())
-            .subscribe(data => {
-                //console.log("blockchain", data);
-                this.blockChain = _.sortBy(data.blocks, function(o){
-                  return o.header.seq * (-1);
-                });
-                this.setBlockPage(1);
-            }, err => console.log("Error on load blockchain: " + err), () => {
-              //console.log('blockchain load done');
-            });
-    }    //Load progress function for Skycoin
+     //Load progress function for puebe
     loadProgress(){
         //Post method executed
         this.http.post('/blockchain/progress', '')
@@ -511,7 +428,7 @@ export class loadNodeComponent implements OnInit {
         var idx = this.defaultConnections.indexOf(item);
         this.defaultConnections.splice(idx, 1);
     }
-    //Add new node function for generate new node in Skycoin
+    //Add new node function for generate new node for an ssh connection
     createNewNode(nodename, address, port, user, pass){
     	//Set http headers
         var headers = new Headers();
@@ -531,7 +448,7 @@ export class loadNodeComponent implements OnInit {
                     this.loadNode();
               	},
                 err => {
-                  console.log(err);
+                  console.log("Error on creating new node: "+JSON.stringify(err));
                 },
                 () => {}
             );
