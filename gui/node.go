@@ -23,7 +23,7 @@ type NodeRPC struct {
 }
 
 //use a global for now
-var Nd *NodeRPC
+var Nd = &NodeRPC{}
 
 const NodeTimestampFormat = "2016_12_14"
 
@@ -191,6 +191,12 @@ func nodeCreate(gateway *server.SSHClient) http.HandlerFunc {
 		host := r.FormValue("address")
 		port := r.FormValue("port")
 		label := r.FormValue("name")
+		
+		//initialize the Node RPC variable
+		if Nd.NodeDirectory == "" {
+			Nd.InitNodeRPC("./puebe")
+		}
+		
 
 		// the node name may dup, rename it till no conflict.
 		p, e := strconv.Atoi(port)
