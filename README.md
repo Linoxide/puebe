@@ -14,7 +14,19 @@ puebe is an ssh client written in Go. It supports
 Install the following packages:
 
 * [Go version 1.7](https://github.com/golang/go/releases/tag/go1.7.3)
+* [Node JS](https://nodejs.org/en/)
+* [NPM](https://www.npmjs.com/)
+* [Gulp](https://www.npmjs.com/package/gulp)
+* [n](https://www.npmjs.com/package/n)
 
+Run the following commands as root user.
+```
+$ dnf install nodejs npm
+$ npm install -g n
+$ n stable
+$ npm rm --global gulp
+$ npm install --global gulp-cli
+```
 ## Installation
 
 Clone Git repo:
@@ -25,18 +37,19 @@ $ cd puebe
 $ go get github.com/go-sql-driver/mysql
 $ go get github.com/scottkiss/gomagic/dbmagic
 $ go get github.com/op/go-logging
-```
-
-### Build && Run application
 
 ```
-$ make
+
+### Build
+
+```
+$ make build
 ```
 
 To make electron release
 ```
 $ cd electron
-$ ./electron/build.sh
+$ ./build.sh
 ```
 
 ### Run
