@@ -39,6 +39,16 @@ if [ -e "$WIN64_STL" ]; then
     FINALS+=("$WIN64_STL_ZIP")
 fi
 
+# Windows
+if [ -e "$WIN32_STL" ]; then
+    if [ -e "$WIN32_STL_ZIP" ]; then
+        echo "Removing old $WIN32_STL_ZIP"
+        rm "$WIN32_STL_ZIP"
+    fi
+    echo "Zipping $WIN32_STL_ZIP"
+    zip -r --quiet "$WIN32_STL_ZIP" "$WIN32_STL"
+    FINALS+=("$WIN32_STL_ZIP")
+fi
 
 # Linux
 if [ -e "$LNX64_STL" ]; then

@@ -11,10 +11,12 @@ pushd "$SCRIPTDIR" >/dev/null
 
 OSX64="${STL_OUTPUT}/${OSX64_STL}"
 WIN64="${STL_OUTPUT}/${WIN64_STL}"
+WIN32="${STL_OUTPUT}/${WIN32_STL}"
 LNX64="${STL_OUTPUT}/${LNX64_STL}"
 
 OSX64_SRC="${OSX64}/server"
 WIN64_SRC="${WIN64}/server"
+WIN32_SRC="${WIN32}/server"
 LNX64_SRC="${LNX64}/server"
 
 DESTSRCS=()
@@ -54,6 +56,7 @@ echo "Copying puebe binaries"
 # copy binaries
 copy_if_exists "puebe_darwin_amd64" "$OSX64" "puebe" "$OSX64_SRC"
 copy_if_exists "puebe_windows_amd64.exe" "$WIN64" "puebe.exe" "$WIN64_SRC"
+copy_if_exists "puebe_windows_ia32.exe" "$WIN32" "puebe.exe" "$WIN32_SRC"
 copy_if_exists "puebe_linux_amd64" "$LNX64" "puebe" "$LNX64_SRC"
 
 # Copy the source for reference

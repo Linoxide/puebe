@@ -25,6 +25,9 @@ if [ -n "$1" ]; then
     "windows/amd64")
         GULP_PLATFORM="win32-x64"
         ;;
+    "windows/ia32")
+        GULP_PLATFORM="win32-ia32"
+        ;;
     "darwin/amd64")
         GULP_PLATFORM="darwin-x64"
         ;;

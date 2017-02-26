@@ -12,14 +12,17 @@ pushd "$SCRIPTDIR" >/dev/null
 
 OSX64="${ELN_OUTPUT}/${OSX64_ELN_PLT}"
 WIN64="${ELN_OUTPUT}/${WIN64_ELN_PLT}"
+WIN32="${ELN_OUTPUT}/${WIN32_ELN_PLT}"
 LNX64="${ELN_OUTPUT}/${LNX64_ELN_PLT}"
 
 OSX64_RES="${OSX64}/${OSX64_APP}/Contents/Resources/app"
 WIN64_RES="${WIN64}/resources/app"
+WIN32_RES="${WIN32}/resources/app"
 LNX64_RES="${LNX64}/resources/app"
 
 OSX64_SRC="${OSX64_RES}/server"
 WIN64_SRC="${WIN64}/server"
+WIN32_SRC="${WIN32}/server"
 LNX64_SRC="${LNX64}/server"
 
 # Capitalize OS X .app for convention
@@ -57,6 +60,7 @@ echo "Copying puebe binaries"
 
 copy_if_exists "puebe_darwin_amd64" "$OSX64_RES" "puebe" "$OSX64_SRC"
 copy_if_exists "puebe_windows_amd64.exe" "$WIN64_RES" "puebe.exe" "$WIN64_SRC"
+copy_if_exists "puebe_windows_ia32.exe" "$WIN32_RES" "puebe.exe" "$WIN32_SRC"
 copy_if_exists "puebe_linux_amd64" "$LNX64_RES" "puebe" "$LNX64_SRC"
 
 # Copy the source for reference

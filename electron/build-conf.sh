@@ -7,7 +7,7 @@ ELN_VERSION="v1.4.12"
 ELN_OUTPUT_BASE=".electron_output"
 ELN_OUTPUT="${ELN_OUTPUT_BASE}/${ELN_VERSION}"
 
-GOX_OSARCH="linux/amd64 windows/amd64 darwin/amd64"
+GOX_OSARCH="linux/amd64 windows/amd64 windows/ia32 darwin/amd64"
 GOX_OUTPUT=".gox_output"
 
 STL_OUTPUT=".standalone_output"
@@ -36,6 +36,12 @@ WIN64_ELN_PLT="win32-x64"
 WIN64_ELN_ZIP="${WIN64_ELN}.zip"
 WIN64_STL="puebe-${PUEBE_VERSION}-bin-win-x64"
 WIN64_STL_ZIP="${WIN64_STL}.zip"
+
+WIN32_ELN="puebe-${PUEBE_VERSION}-gui-win-ia32"
+WIN32_ELN_PLT="win32-ia32"
+WIN32_ELN_ZIP="${WIN32_ELN}.zip"
+WIN32_STL="puebe-${PUEBE_VERSION}-bin-win-ia32"
+WIN32_STL_ZIP="${WIN32_STL}.zip"
 
 LNX64_ELN="puebe-${PUEBE_VERSION}-gui-linux-x64"
 LNX64_ELN_PLT="linux-x64"

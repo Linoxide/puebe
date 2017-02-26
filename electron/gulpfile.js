@@ -8,7 +8,7 @@ var packageJson = require('./src/package.json');
 gulp.task('electron', () => {
     var platforms = [
         'win32-x64',
-        // 'win32-ia32',
+        'win32-ia32',
         'darwin-x64',
         'linux-x64'
     ];

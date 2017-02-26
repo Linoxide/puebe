@@ -46,6 +46,19 @@ if [ -e "$WIN64_ELN_PLT" ]; then
     FINALS+=("$WIN64_ELN_ZIP")
 fi
 
+# Windows
+if [ -e "$WIN32_ELN_PLT" ]; then
+    if [ -e "$WIN32_ELN_ZIP" ]; then
+        echo "Removing old $WIN32_ELN_ZIP"
+        rm "$WIN32_ELN_ZIP"
+    fi
+    echo "Zipping $WIN32_ELN_ZIP"
+    mv "$WIN32_ELN_PLT" "$WIN32_ELN"
+    zip -r --quiet "$WIN32_ELN_ZIP" "$WIN32_ELN"
+    mv "$WIN32_ELN" "$WIN32_ELN_PLT"
+    FINALS+=("$WIN32_ELN_ZIP")
+fi
+
 # Linux
 if [ -e "$LNX64_ELN_PLT" ]; then
     if [ -e "$LNX64_ELN_ZIP" ]; then
