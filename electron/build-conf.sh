@@ -2,7 +2,7 @@
 set -e -o pipefail
 
 # These values are also in gulpfile.js and package.json and must be equal
-PUEBE_VERSION="0.0.1"
+PUEBE_VERSION="0.1.0"
 ELN_VERSION="v1.4.12"
 ELN_OUTPUT_BASE=".electron_output"
 ELN_OUTPUT="${ELN_OUTPUT_BASE}/${ELN_VERSION}"

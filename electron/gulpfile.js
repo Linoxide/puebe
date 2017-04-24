@@ -3,7 +3,7 @@
 var gulp = require('gulp');
 var electron = require('gulp-electron');
 var exec = require('child_process').exec;
-var packageJson = require('./src/package.json');
+var packageJson = require('./package.json');
 
 gulp.task('electron', () => {
     var platforms = [

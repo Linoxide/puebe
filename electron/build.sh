@@ -22,10 +22,10 @@ echo "Installing node modules"
 ./install-node-modules.sh
 
 echo
-echo "==========================="
-echo "Building standalone release"
+#echo "==========================="
+#echo "Building standalone release"
 
-SKIP_COMPILATION=1 ./build-standalone-release.sh "$GOX_OSARCH"
+#SKIP_COMPILATION=1 ./build-standalone-release.sh "$GOX_OSARCH"
 
 echo
 echo "==========================="
